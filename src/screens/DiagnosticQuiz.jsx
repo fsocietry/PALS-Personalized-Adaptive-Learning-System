@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Brain, Lightbulb, CircleCheckBig } from 'lucide-react'
+import { Lightbulb, CircleCheckBig } from 'lucide-react'
+import iconPng from '../assets/icon.png'
 import { diagnosticQuestions as QS } from '../data/questions'
 
 const DIFF_COLOR = { easy: '#7a9e6e', medium: '#5aabde', hard: '#e05252' }
@@ -9,7 +10,6 @@ export default function DiagnosticQuiz({ onComplete }) {
   const [idx, setIdx]           = useState(0)
   const [answers, setAnswers]   = useState(Array(QS.length).fill(null))
   const [hints, setHints]       = useState(Array(QS.length).fill(0))
-  const [showHint, setShowHint] = useState(false)
   const timesRef                = useRef(Array(QS.length).fill(0))
   const tStart                  = useRef(Date.now())
 
@@ -19,16 +19,15 @@ export default function DiagnosticQuiz({ onComplete }) {
   const progress = ((idx + 1) / QS.length) * 100
   const dc       = DIFF_COLOR[q.difficulty] || '#5aabde'
 
-  useEffect(() => { setShowHint(false); tStart.current = Date.now() }, [idx])
+  useEffect(() => { tStart.current = Date.now() }, [idx])
 
   const pick = i => {
-    if (selected !== null) return
     const a = [...answers]; a[idx] = i; setAnswers(a)
   }
 
   const useHint = () => {
     if (hintN >= 3) return
-    const h = [...hints]; h[idx] = hintN + 1; setHints(h); setShowHint(true)
+    const h = [...hints]; h[idx] = hintN + 1; setHints(h)
   }
 
   const recordTime = () => {
@@ -89,7 +88,7 @@ export default function DiagnosticQuiz({ onComplete }) {
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 boxShadow: '0 0 14px rgba(61,110,168,0.5)',
               }}>
-                <Brain size={17} color="#fff" />
+                <img src={iconPng} alt="PALS" style={{ width: 26, height: 26, objectFit: 'contain' }} />
               </div>
               <span style={{ color: '#fff', fontWeight: 700, fontSize: '0.95rem' }}>
                 Diagnostic Assessment
@@ -135,72 +134,77 @@ export default function DiagnosticQuiz({ onComplete }) {
               boxShadow: '0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.07)',
             }}>
 
-              {/* Badges */}
-              <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
-                <span style={{
-                  padding: '5px 14px', borderRadius: 99,
-                  background: 'rgba(113,191,235,0.15)', color: '#71bfeb',
-                  fontSize: '0.8rem', fontWeight: 600,
-                  border: '1px solid rgba(113,191,235,0.25)',
-                }}>
-                  {q.category}
-                </span>
-                {q.difficulty && (
+              {/* Top row: badges + hint button */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                <div style={{ display: 'flex', gap: 8 }}>
                   <span style={{
-                    padding: '5px 14px', borderRadius: 99, fontSize: '0.8rem', fontWeight: 600,
-                    textTransform: 'capitalize', background: `${dc}20`, color: dc,
-                    border: `1px solid ${dc}40`,
+                    padding: '5px 14px', borderRadius: 99,
+                    background: 'rgba(113,191,235,0.15)', color: '#71bfeb',
+                    fontSize: '0.8rem', fontWeight: 600,
+                    border: '1px solid rgba(113,191,235,0.25)',
                   }}>
-                    {q.difficulty}
+                    {q.category}
                   </span>
-                )}
+                  {q.difficulty && (
+                    <span style={{
+                      padding: '5px 14px', borderRadius: 99, fontSize: '0.8rem', fontWeight: 600,
+                      textTransform: 'capitalize', background: `${dc}20`, color: dc,
+                      border: `1px solid ${dc}40`,
+                    }}>
+                      {q.difficulty}
+                    </span>
+                  )}
+                </div>
+                <motion.button type="button"
+                  whileTap={hintN < 3 ? { scale: 0.96 } : {}}
+                  onClick={useHint} disabled={hintN >= 3}
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 6,
+                    padding: '7px 16px', borderRadius: 99, border: 'none',
+                    background: hintN >= 3 ? 'rgba(255,255,255,0.05)' : 'linear-gradient(135deg, #f5c842, #f0a820)',
+                    color: hintN >= 3 ? 'rgba(255,255,255,0.25)' : '#1a1a2e',
+                    fontWeight: 700, fontSize: '0.8rem',
+                    cursor: hintN >= 3 ? 'not-allowed' : 'pointer',
+                    boxShadow: hintN >= 3 ? 'none' : '0 4px 14px rgba(245,200,66,0.38)',
+                    transition: 'all 0.2s ease',
+                  }}>
+                  <Lightbulb size={13} />
+                  {hintN === 0 ? 'Hint?' : `Hint ${hintN}/3`}
+                </motion.button>
               </div>
+
+              {/* Hint boxes */}
+              <AnimatePresence>
+                {hintN > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }} style={{ overflow: 'hidden', marginBottom: 16 }}>
+                    {q.hints.slice(0, hintN).map((hint, hi) => (
+                      <motion.div key={hi}
+                        initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
+                        transition={{ delay: hi * 0.05 }}
+                        style={{ overflow: 'hidden' }}>
+                        <div style={{
+                          marginBottom: 8, padding: '10px 14px', borderRadius: 10,
+                          background: 'rgba(245,200,66,0.08)',
+                          border: '1px solid rgba(245,200,66,0.25)',
+                          display: 'flex', gap: 8,
+                        }}>
+                          <Lightbulb size={13} color="#f5c842" style={{ marginTop: 2, flexShrink: 0 }} />
+                          <p style={{ color: 'rgba(245,200,66,0.85)', fontSize: '0.82rem', lineHeight: 1.6, margin: 0 }}>
+                            <span style={{ fontWeight: 700, marginRight: 5 }}>Hint {hi + 1}:</span>{hint}
+                          </p>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#fff',
                 lineHeight: 1.5, marginBottom: 22, letterSpacing: '-0.3px' }}>
                 {q.text}
               </h2>
-
-              {/* Hint */}
-              <div style={{ marginBottom: 22 }}>
-                <motion.button type="button"
-                  whileHover={hintN < 3 ? { scale: 1.04 } : {}}
-                  whileTap={hintN < 3 ? { scale: 0.96 } : {}}
-                  onClick={useHint} disabled={hintN >= 3}
-                  style={{
-                    display: 'inline-flex', alignItems: 'center', gap: 6,
-                    padding: '8px 18px', borderRadius: 99, border: 'none',
-                    background: hintN >= 3 ? 'rgba(255,255,255,0.05)' : 'linear-gradient(135deg, #f5c842, #f0a820)',
-                    color: hintN >= 3 ? 'rgba(255,255,255,0.25)' : '#1a1a2e',
-                    fontWeight: 700, fontSize: '0.83rem',
-                    cursor: hintN >= 3 ? 'not-allowed' : 'pointer',
-                    boxShadow: hintN >= 3 ? 'none' : '0 4px 14px rgba(245,200,66,0.38)',
-                    transition: 'all 0.2s ease',
-                  }}>
-                  <Lightbulb size={14} />
-                  {hintN === 0 ? 'Need a Hint?' : `Hint ${hintN}/3`}
-                </motion.button>
-
-                <AnimatePresence>
-                  {showHint && hintN > 0 && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }} style={{ overflow: 'hidden' }}>
-                      <div style={{
-                        marginTop: 12, padding: '12px 16px', borderRadius: 10,
-                        background: 'rgba(245,200,66,0.08)',
-                        border: '1px solid rgba(245,200,66,0.25)',
-                        display: 'flex', gap: 8,
-                      }}>
-                        <Lightbulb size={14} color="#f5c842" style={{ marginTop: 2, flexShrink: 0 }} />
-                        <p style={{ color: 'rgba(245,200,66,0.85)', fontSize: '0.84rem', lineHeight: 1.65, margin: 0 }}>
-                          {q.hints[hintN - 1]}
-                        </p>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
 
               {/* Options */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
@@ -209,8 +213,9 @@ export default function DiagnosticQuiz({ onComplete }) {
                   return (
                     <motion.button key={i} type="button"
                       onClick={() => pick(i)}
-                      whileHover={selected === null ? { y: -2, background: 'rgba(255,255,255,0.1)' } : {}}
-                      whileTap={selected === null ? { scale: 0.99 } : {}}
+                      whileHover={{ background: sel ? 'rgba(43,89,143,0.75)' : 'rgba(255,255,255,0.1)' }}
+                      whileTap={{ scale: 0.98 }}
+                      transition={{ duration: 0.08 }}
                       style={{
                         padding: '17px 20px', borderRadius: 12, textAlign: 'left',
                         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -218,9 +223,9 @@ export default function DiagnosticQuiz({ onComplete }) {
                         border: sel ? '1.5px solid #71bfeb' : '1.5px solid rgba(255,255,255,0.08)',
                         color: '#fff',
                         fontSize: '0.95rem', fontWeight: sel ? 600 : 400,
-                        cursor: selected !== null ? 'default' : 'pointer',
+                        cursor: 'pointer',
                         boxShadow: sel ? '0 8px 24px rgba(43,89,143,0.35)' : 'none',
-                        transition: 'background 0.18s, border-color 0.18s, box-shadow 0.18s',
+                        transition: 'background 0.08s, border-color 0.08s, box-shadow 0.08s',
                       }}>
                       <span>{opt}</span>
                       {sel && (

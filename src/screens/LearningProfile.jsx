@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion'
-import { Brain, Award, Clock, Lightbulb, TrendingUp, Target, CircleCheckBig, TriangleAlert, ChevronRight } from 'lucide-react'
+import { Award, Clock, Lightbulb, TrendingUp, Target, CircleCheckBig, TriangleAlert, ChevronRight } from 'lucide-react'
+import iconPng from '../assets/icon.png'
 import { useCountUp } from '../hooks/useCountUp'
 
 function compute(results) {
@@ -106,7 +107,7 @@ export default function LearningProfile({ results, onContinue }) {
               margin: '0 auto 16px',
               boxShadow: '0 8px 28px rgba(43,89,143,0.5)',
             }}>
-            <Brain size={28} color="#fff" />
+            <img src={iconPng} alt="PALS" style={{ width: 50, height: 50, objectFit: 'contain' }} />
           </motion.div>
           <h1 style={{ fontSize: '1.9rem', fontWeight: 800, color: '#fff', margin: '0 0 8px', letterSpacing: '-0.5px' }}>
             Your Learning Profile
@@ -122,7 +123,7 @@ export default function LearningProfile({ results, onContinue }) {
             <motion.div key={s.label}
               initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 + i * 0.08, type: 'spring', stiffness: 100 }}
-              whileHover={{ y: -3 }}
+              whileHover={{}}
               style={{ ...glass, borderRadius: 14, padding: '16px 14px', transition: 'transform 0.25s ease' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                 <div style={{
@@ -151,7 +152,7 @@ export default function LearningProfile({ results, onContinue }) {
             transition={{ delay: 0.38 }}
             style={{ ...glass, borderRadius: 16, padding: '22px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 16 }}>
-              <Brain size={17} color="#71bfeb" />
+              <img src={iconPng} alt="PALS" style={{ width: 18, height: 18, objectFit: 'contain' }} />
               <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#fff', margin: 0 }}>Learning Style</h3>
             </div>
             <div style={{

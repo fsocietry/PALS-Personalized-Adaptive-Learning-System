@@ -15,19 +15,6 @@ input:focus { outline: none; }
 ::-webkit-scrollbar-track { background: #e8f0f8; }
 ::-webkit-scrollbar-thumb { background: #5aabde; border-radius: 3px; }
 
-@keyframes shimmer {
-  0%   { transform: translateX(-130%); }
-  100% { transform: translateX(250%); }
-}
-.shimmer-btn::after {
-  content: '';
-  position: absolute;
-  top: 0; bottom: 0; width: 35%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-  animation: shimmer 2.8s ease-in-out infinite;
-  animation-delay: 1s;
-  pointer-events: none;
-}
 
 @keyframes orbitDot {
   from { transform: rotate(0deg) translateX(46px) rotate(0deg); }

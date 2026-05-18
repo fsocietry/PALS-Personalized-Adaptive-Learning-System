@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Brain, CircleCheckBig } from 'lucide-react'
+import { CircleCheckBig } from 'lucide-react'
+import iconPng from '../assets/icon.png'
 
 const STEPS = [
   'Evaluating accuracy and performance',
@@ -112,7 +113,7 @@ export default function Analyzing({ onDone }) {
                 <motion.div
                   animate={{ scale: [1, 1.08, 1] }}
                   transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}>
-                  <Brain size={30} color="#fff" />
+                  <img src={iconPng} alt="PALS" style={{ width: 54, height: 54, objectFit: 'contain' }} />
                 </motion.div>
               </div>
             </div>

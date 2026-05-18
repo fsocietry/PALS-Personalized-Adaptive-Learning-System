@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion'
-import { Brain, Target, TrendingUp, Info, ChevronRight } from 'lucide-react'
+import { Target, TrendingUp, Info, ChevronRight } from 'lucide-react'
+import iconPng from '../assets/icon.png'
 
 const BLOBS = [
   { size: 420, left: '-12%', top: '-18%', color: '#1e4080', delay: 0 },
@@ -73,7 +74,7 @@ export default function DiagnosticIntro({ onBegin }) {
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   boxShadow: '0 8px 28px rgba(43,89,143,0.5)',
                 }}>
-                <Brain size={30} color="#fff" />
+                <img src={iconPng} alt="PALS" style={{ width: 54, height: 54, objectFit: 'contain' }} />
               </motion.div>
             </div>
           </div>

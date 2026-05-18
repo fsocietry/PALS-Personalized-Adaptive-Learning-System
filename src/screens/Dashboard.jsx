@@ -111,7 +111,7 @@ export default function Dashboard({ user, onStartQuiz, onLogout }) {
             <motion.div key={s.label}
               initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.08 + i * 0.08, type: 'spring', stiffness: 100 }}
-              whileHover={{ y: -3 }}
+              whileHover={{}}
               style={{ ...glass, borderRadius: 14, padding: '18px 16px', transition: 'transform 0.25s ease' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                 <div style={{
@@ -143,7 +143,7 @@ export default function Dashboard({ user, onStartQuiz, onLogout }) {
                 <motion.button key={cat.name} type="button"
                   initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.34 + i * 0.06 }}
-                  whileHover={{ x: 3, background: 'rgba(255,255,255,0.1)' }}
+                  whileHover={{ background: 'rgba(255,255,255,0.1)' }}
                   whileTap={{ scale: 0.98 }}
                   onClick={onStartQuiz}
                   style={{

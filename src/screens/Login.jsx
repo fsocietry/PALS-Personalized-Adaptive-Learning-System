@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { GraduationCap, BookOpen, ArrowRight } from 'lucide-react'
+import { BookOpen, ArrowRight } from 'lucide-react'
+import iconPng from '../assets/icon.png'
 
 const BLOBS = [
   { size: 560, left: '-18%', top: '-22%', color: '#1e4080', delay: 0 },
@@ -74,7 +75,7 @@ export default function Login({ onStart }) {
               boxShadow: '0 8px 36px rgba(90,171,222,0.4), inset 0 1px 0 rgba(255,255,255,0.12)',
               position: 'relative',
             }}>
-              <GraduationCap size={38} color="#fff" />
+              <img src={iconPng} alt="PALS" style={{ width: 64, height: 64, objectFit: 'contain' }} />
             </div>
           </motion.div>
 
@@ -108,7 +109,6 @@ export default function Login({ onStart }) {
             border: '1px solid rgba(255,255,255,0.1)',
             borderRadius: 20, padding: '36px 32px',
             boxShadow: '0 32px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.07)',
-            marginBottom: 14,
           }}>
 
           {[
@@ -168,38 +168,6 @@ export default function Login({ onStart }) {
           </p>
         </motion.div>
 
-        {/* Stats */}
-        <motion.div
-          initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.9 }}
-          style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10 }}>
-          {[
-            { value: '25',  label: 'Questions' },
-            { value: '30',  label: 'Minutes'   },
-            { value: '100', label: 'Points'     },
-          ].map((s, i) => (
-            <motion.div key={s.label}
-              initial={{ opacity: 0, scale: 0.8, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              transition={{ delay: 0.95 + i * 0.08, type: 'spring', stiffness: 180, damping: 14 }}
-              style={{
-                padding: '14px 8px', borderRadius: 12, textAlign: 'center',
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(255,255,255,0.07)',
-                backdropFilter: 'blur(8px)',
-              }}>
-              <div style={{
-                fontSize: '1.7rem', fontWeight: 800, color: '#71bfeb', marginBottom: 3,
-                textShadow: '0 0 18px rgba(113,191,235,0.5)',
-              }}>
-                {s.value}
-              </div>
-              <div style={{ fontSize: '0.72rem', color: 'rgba(178,208,238,0.5)', fontWeight: 500, letterSpacing: '0.3px' }}>
-                {s.label}
-              </div>
-            </motion.div>
-          ))}
-        </motion.div>
       </div>
     </motion.div>
   )
