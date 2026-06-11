@@ -2,39 +2,28 @@ import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronLeft, Lightbulb, CircleCheckBig, Clock } from 'lucide-react'
 import { practiceQuestions as QS } from '../data/questions'
-import { useQuizTelemetry } from '../lib/telemetry'
-import ConfidencePicker from '../components/ConfidencePicker'
 
 export default function PracticeQuiz({ onComplete, onExit }) {
   const [idx, setIdx]           = useState(0)
   const [answers, setAnswers]   = useState(Array(QS.length).fill(null))
   const [hints, setHints]       = useState(Array(QS.length).fill(0))
-  const [confidence, setConf]   = useState(Array(QS.length).fill(null))
   const timesRef                = useRef(Array(QS.length).fill(0))
-  const tStart                  = useRef(0)
-  const tele                    = useQuizTelemetry(QS)
+  const tStart                  = useRef(Date.now())
 
   const q        = QS[idx]
   const selected = answers[idx]
   const hintN    = hints[idx]
   const progress = ((idx + 1) / QS.length) * 100
 
-  useEffect(() => { tStart.current = Date.now(); tele.visit(idx) }, [idx, tele])
+  useEffect(() => { tStart.current = Date.now() }, [idx])
 
   const pick = i => {
     const a = [...answers]; a[idx] = i; setAnswers(a)
-    tele.select(idx, i)
   }
 
   const useHint = () => {
     if (hintN >= 3) return
     const h = [...hints]; h[idx] = hintN + 1; setHints(h)
-    tele.openHint(idx, hintN + 1)
-  }
-
-  const pickConfidence = v => {
-    const c = [...confidence]; c[idx] = v; setConf(c)
-    tele.setConfidence(idx, v)
   }
 
   const recordTime = () => {
@@ -44,7 +33,7 @@ export default function PracticeQuiz({ onComplete, onExit }) {
   const goNext = () => {
     recordTime()
     if (idx < QS.length - 1) setIdx(idx + 1)
-    else onComplete({ answers, hintsUsed: hints, times: timesRef.current, questions: QS, telemetry: tele.finalize() })
+    else onComplete({ answers, hintsUsed: hints, times: timesRef.current, questions: QS })
   }
 
   const goPrev = () => { recordTime(); if (idx > 0) setIdx(idx - 1) }
@@ -232,18 +221,13 @@ export default function PracticeQuiz({ onComplete, onExit }) {
                 })}
               </div>
 
-              {/* Confidence */}
-              {selected !== null && (
-                <ConfidencePicker value={confidence[idx]} onPick={pickConfidence} />
-              )}
-
               {/* Nav buttons */}
               <div style={{ display: 'flex', gap: 12 }}>
                 <motion.button type="button"
                   whileTap={idx > 0 ? { scale: 0.97 } : {}}
                   onClick={goPrev} disabled={idx === 0}
                   style={{
-                    padding: '13px 20px', borderRadius: 10,
+                    padding: '13px 20px', borderRadius: 10, border: 'none',
                     background: 'rgba(255,255,255,0.06)',
                     border: '1px solid rgba(255,255,255,0.08)',
                     color: idx === 0 ? 'rgba(255,255,255,0.2)' : 'rgba(178,208,238,0.8)',

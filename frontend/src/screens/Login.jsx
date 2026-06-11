@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { BookOpen, ArrowRight } from 'lucide-react'
 import iconPng from '../assets/icon.png'
+import { auth } from '../firebase'
+import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth'
 
 const BLOBS = [
   { size: 560, left: '-18%', top: '-22%', color: '#1e4080', delay: 0 },
@@ -17,6 +19,42 @@ export default function Login({ onStart }) {
 
   const handleStart = () =>
     onStart({ name: username || 'Student', email: email || 'student@example.com' })
+
+  const handleGoogleLogin = async () => {
+  try {
+    const provider = new GoogleAuthProvider()
+
+    const result = await signInWithPopup(auth, provider)
+
+    const user = result.user
+
+    const token = await user.getIdToken()
+
+    const response = await fetch(
+      "http://localhost:3000/api/auth/login",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    )
+
+    const data = await response.json()
+
+    console.log("Response Backend:", data)
+
+    onStart({
+      name: user.displayName,
+      email: user.email
+    })
+
+  } catch (error) {
+  console.error("Firebase Error Code:", error.code)
+  console.error("Firebase Error Message:", error.message)
+  console.error(error)
+}
+}
 
   return (
     <motion.div
@@ -162,6 +200,22 @@ export default function Login({ onStart }) {
             Start Your Journey
             <ArrowRight size={17} />
           </motion.button>
+
+          <button
+            onClick={handleGoogleLogin}
+            style={{
+              width: '100%',
+              padding: '15px',
+              borderRadius: 12,
+              border: '1px solid rgba(255,255,255,0.1)',
+              background: 'rgba(255,255,255,0.05)',
+              color: '#fff',
+              cursor: 'pointer',
+              marginTop: 12
+            }}
+          >
+            Login dengan Google
+          </button>
 
           <p style={{ textAlign: 'center', fontSize: '0.75rem', color: 'rgba(178,208,238,0.35)', margin: '14px 0 0' }}>
             No account required · Just dive in
