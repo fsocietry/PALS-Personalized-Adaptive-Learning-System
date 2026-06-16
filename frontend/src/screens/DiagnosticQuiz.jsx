@@ -1,43 +1,97 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Lightbulb, CircleCheckBig } from 'lucide-react'
 import iconPng from '../assets/icon.png'
-import { diagnosticQuestions as QS } from '../data/questions'
+import { diagnosticQuestions as masterQuestions } from '../data/questions'
 import { useQuizTelemetry } from '../lib/telemetry'
 import ConfidencePicker from '../components/ConfidencePicker'
 
 const DIFF_COLOR = { easy: '#7a9e6e', medium: '#5aabde', hard: '#e05252' }
 
+function shuffle(array) {
+  const copy = [...array]
+  for (let i = copy.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[copy[i], copy[j]] = [copy[j], copy[i]]
+  }
+  return copy
+}
+
+function pickOneByDifficulty(questions, difficulty) {
+  const subset = questions.filter(q => q.difficulty === difficulty)
+  if (!subset.length) return null
+  return subset[Math.floor(Math.random() * subset.length)]
+}
+
+function pickDiagnosticSubset(questions) {
+  const byTopic = questions.reduce((acc, q) => {
+    acc[q.topic] = acc[q.topic] || []
+    acc[q.topic].push(q)
+    return acc
+  }, {})
+
+  const selected = []
+
+  for (const topic of Object.keys(byTopic)) {
+    const topicQuestions = byTopic[topic]
+    const easy = pickOneByDifficulty(topicQuestions, 'easy')
+    const medium = pickOneByDifficulty(topicQuestions, 'medium')
+    const hard = pickOneByDifficulty(topicQuestions, 'hard')
+
+    if (easy) selected.push(easy)
+    if (medium) selected.push(medium)
+    if (hard) selected.push(hard)
+  }
+
+  if (selected.length < 36) {
+    const remaining = questions.filter(q => !selected.some(sel => sel.id === q.id))
+    const fill = shuffle(remaining).slice(0, 36 - selected.length)
+    selected.push(...fill)
+  }
+
+  return shuffle(selected).slice(0, 36)
+}
+
 export default function DiagnosticQuiz({ onComplete }) {
-  const [idx, setIdx]           = useState(0)
-  const [answers, setAnswers]   = useState(Array(QS.length).fill(null))
-  const [hints, setHints]       = useState(Array(QS.length).fill(0))
-  const [confidence, setConf]   = useState(Array(QS.length).fill(null))
-  const timesRef                = useRef(Array(QS.length).fill(0))
-  const tStart                  = useRef(0)
-  const tele                    = useQuizTelemetry(QS)
+  const questions = useMemo(() => pickDiagnosticSubset(masterQuestions), [])
+  const [idx, setIdx] = useState(0)
+  const [answers, setAnswers] = useState(Array(questions.length).fill(null))
+  const [hints, setHints] = useState(Array(questions.length).fill(0))
+  const [confidence, setConf] = useState(Array(questions.length).fill(null))
+  const timesRef = useRef(Array(questions.length).fill(0))
+  const tStart = useRef(0)
+  const tele = useQuizTelemetry(questions)
 
-  const q        = QS[idx]
+  const q = questions[idx]
   const selected = answers[idx]
-  const hintN    = hints[idx]
-  const progress = ((idx + 1) / QS.length) * 100
-  const dc       = DIFF_COLOR[q.difficulty] || '#5aabde'
+  const hintN = hints[idx]
+  const progress = ((idx + 1) / questions.length) * 100
+  const dc = DIFF_COLOR[q.difficulty] || '#5aabde'
 
-  useEffect(() => { tStart.current = Date.now(); tele.visit(idx) }, [idx, tele])
+  useEffect(() => {
+    tStart.current = Date.now()
+    tele.visit(idx)
+  }, [idx, tele])
 
   const pick = i => {
-    const a = [...answers]; a[idx] = i; setAnswers(a)
+    const a = [...answers]
+    a[idx] = i
+    setAnswers(a)
     tele.select(idx, i)
   }
 
   const useHint = () => {
     if (hintN >= 3) return
-    const h = [...hints]; h[idx] = hintN + 1; setHints(h)
+    const h = [...hints]
+    h[idx] = hintN + 1
+    setHints(h)
     tele.openHint(idx, hintN + 1)
   }
 
   const pickConfidence = v => {
-    const c = [...confidence]; c[idx] = v; setConf(c)
+    const c = [...confidence]
+    c[idx] = v
+    setConf(c)
     tele.setConfidence(idx, v)
   }
 
@@ -47,8 +101,17 @@ export default function DiagnosticQuiz({ onComplete }) {
 
   const next = () => {
     recordTime()
-    if (idx < QS.length - 1) setIdx(idx + 1)
-    else onComplete({ answers, hintsUsed: hints, times: timesRef.current, questions: QS, telemetry: tele.finalize() })
+    if (idx < questions.length - 1) {
+      setIdx(idx + 1)
+    } else {
+      onComplete({
+        answers,
+        hintsUsed: hints,
+        times: timesRef.current,
+        questions,
+        telemetry: tele.finalize(),
+      })
+    }
   }
 
   return (
@@ -59,8 +122,7 @@ export default function DiagnosticQuiz({ onComplete }) {
         position: 'relative',
       }}>
 
-      {/* Background blobs */}
-      {[
+      {[ 
         { size: 380, left: '-10%', top: '-15%', color: '#1e4080', delay: 0 },
         { size: 260, left: '72%',  top: '55%',  color: '#0d3060', delay: 3 },
       ].map((b, i) => (
@@ -82,7 +144,6 @@ export default function DiagnosticQuiz({ onComplete }) {
         backgroundSize: '30px 30px',
       }} />
 
-      {/* Sticky header */}
       <div style={{
         background: 'rgba(0,0,0,0.35)',
         backdropFilter: 'blur(20px)',
@@ -111,7 +172,7 @@ export default function DiagnosticQuiz({ onComplete }) {
               border: '1px solid rgba(255,255,255,0.12)',
             }}>
               <span style={{ color: '#71bfeb', fontWeight: 700, fontSize: '0.88rem' }}>
-                {idx + 1} <span style={{ color: 'rgba(178,208,238,0.45)', fontSize: '0.8rem' }}>/ {QS.length}</span>
+                {idx + 1} <span style={{ color: 'rgba(178,208,238,0.45)', fontSize: '0.8rem' }}>/ {questions.length}</span>
               </span>
             </div>
           </div>
@@ -135,7 +196,6 @@ export default function DiagnosticQuiz({ onComplete }) {
             initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -18 }} transition={{ duration: 0.22, ease: 'easeOut' }}>
 
-            {/* Question card */}
             <div style={{
               background: 'rgba(255,255,255,0.06)',
               backdropFilter: 'blur(24px)',
@@ -145,7 +205,6 @@ export default function DiagnosticQuiz({ onComplete }) {
               boxShadow: '0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.07)',
             }}>
 
-              {/* Top row: badges + hint button */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
                 <div style={{ display: 'flex', gap: 8 }}>
                   <span style={{
@@ -184,7 +243,6 @@ export default function DiagnosticQuiz({ onComplete }) {
                 </motion.button>
               </div>
 
-              {/* Hint boxes */}
               <AnimatePresence>
                 {hintN > 0 && (
                   <motion.div
@@ -217,7 +275,6 @@ export default function DiagnosticQuiz({ onComplete }) {
                 {q.text}
               </h2>
 
-              {/* Options */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
                 {q.options.map((opt, i) => {
                   const sel = selected === i
@@ -250,12 +307,10 @@ export default function DiagnosticQuiz({ onComplete }) {
                 })}
               </div>
 
-              {/* Confidence */}
               {selected !== null && (
                 <ConfidencePicker value={confidence[idx]} onPick={pickConfidence} />
               )}
 
-              {/* Next button */}
               <motion.button type="button"
                 whileHover={selected !== null ? { scale: 1.02, boxShadow: '0 12px 32px rgba(90,171,222,0.35)' } : {}}
                 whileTap={selected !== null ? { scale: 0.98 } : {}}
@@ -271,11 +326,10 @@ export default function DiagnosticQuiz({ onComplete }) {
                   transition: 'all 0.25s ease',
                   position: 'relative', overflow: 'hidden',
                 }}>
-                {idx < QS.length - 1 ? 'Next Question →' : 'Finish Quiz ✓'}
+                {idx < questions.length - 1 ? 'Next Question →' : 'Finish Quiz ✓'}
               </motion.button>
             </div>
 
-            {/* Tips */}
             <div style={{
               background: 'rgba(255,255,255,0.04)',
               backdropFilter: 'blur(16px)',
