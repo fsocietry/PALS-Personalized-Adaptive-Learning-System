@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 const OPTIONS = [
   { value: 'yakin', label: 'Yakin', color: '#7a9e6e' },
   { value: 'ragu',  label: 'Ragu-ragu', color: '#f5c842' },
+  { value: 'tidak', label: 'Tidak yakin', color: '#e05252' },
 ]
 
 // Confidence rating shown once an answer is selected. Feeds first/final_confidence telemetry.
@@ -12,7 +13,7 @@ export default function ConfidencePicker({ value, onPick }) {
       <p style={{ color: 'rgba(178,208,238,0.6)', fontSize: '0.8rem', fontWeight: 600, margin: '0 0 8px' }}>
         Seberapa yakin dengan jawabanmu?
       </p>
-      <div style={{ display: 'flex', gap: 10 }}>
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
         {OPTIONS.map(o => {
           const sel = value === o.value
           return (
