@@ -10,42 +10,35 @@ const BLOBS = [
   { size: 180, left: '60%',  top: '2%',   color: '#1a3a6e', delay: 1 },
 ]
 
+// Backend base URL — configurable per environment (defaults to local dev).
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+
 export default function Login({ onStart }) {
   const handleGoogleLogin = async () => {
-  try {
-    const provider = new GoogleAuthProvider()
+    try {
+      const provider = new GoogleAuthProvider()
+      const result = await signInWithPopup(auth, provider)
+      const user = result.user
 
-    const result = await signInWithPopup(auth, provider)
-
-    const user = result.user
-
-    const token = await user.getIdToken()
-
-    const response = await fetch(
-      "http://localhost:3000/api/auth/login",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+      // Best-effort backend verification — don't block login if the API is unreachable.
+      try {
+        const token = await user.getIdToken()
+        const response = await fetch(`${API_URL}/api/auth/login`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        console.log('Response Backend:', await response.json())
+      } catch (apiErr) {
+        console.warn('Backend verification skipped:', apiErr.message)
       }
-    )
 
-    const data = await response.json()
-
-    console.log("Response Backend:", data)
-
-    onStart({
-      name: user.displayName,
-      email: user.email
-    })
-
-  } catch (error) {
-  console.error("Firebase Error Code:", error.code)
-  console.error("Firebase Error Message:", error.message)
-  console.error(error)
-}
-}
+      onStart({ name: user.displayName, email: user.email })
+    } catch (error) {
+      console.error('Firebase Error Code:', error.code)
+      console.error('Firebase Error Message:', error.message)
+      console.error(error)
+    }
+  }
 
   return (
     <motion.div
