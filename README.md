@@ -8,12 +8,14 @@
 
 # PALS — Personalized Adaptive Learning System
 
-**An intelligent English proficiency assessment platform that adapts to your unique learning style.**
+**An intelligent English (tenses) proficiency platform that assesses a learner, captures rich per-question behaviour, and adapts to their unique learning style.**
 
 <br />
 
 [![React](https://img.shields.io/badge/React-19-61dafb?style=flat-square&logo=react)](https://react.dev)
 [![Vite](https://img.shields.io/badge/Vite-8-646cff?style=flat-square&logo=vite)](https://vite.dev)
+[![Firebase](https://img.shields.io/badge/Firebase-Auth-ffca28?style=flat-square&logo=firebase&logoColor=black)](https://firebase.google.com)
+[![Express](https://img.shields.io/badge/Express-5-000000?style=flat-square&logo=express)](https://expressjs.com)
 [![Framer Motion](https://img.shields.io/badge/Framer%20Motion-12-ff0080?style=flat-square&logo=framer)](https://www.framer.com/motion)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-4-06b6d4?style=flat-square&logo=tailwindcss)](https://tailwindcss.com)
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
@@ -26,53 +28,71 @@
 
 ## Overview
 
-PALS is a frontend web application that delivers a fully animated, multi-screen English language assessment experience. It evaluates a learner's proficiency through a diagnostic quiz, analyzes their response patterns, and generates a personalized learning profile with tailored recommendations — all without requiring a backend or user account.
+PALS is a full-stack web application that delivers an animated, multi-screen English **tenses** assessment experience. Learners sign in with Google, work through a diagnostic and a practice quiz drawn from a 12-tense question bank, and receive a personalized learning profile. While they answer, PALS records detailed per-question **behaviour telemetry** (timing, hint usage, answer changes, confidence, focus loss) that can be exported as CSV for downstream analysis.
+
+The project is split into two parts:
+
+- **`frontend/`** — React 19 + Vite single-page app (the learner experience).
+- **`backend/`** — Express 5 API that verifies Firebase ID tokens with the Firebase Admin SDK.
 
 ---
 
 ## Features
 
-- **Diagnostic Assessment** — 8 adaptive questions spanning Grammar, Vocabulary, and Idioms with 3 configurable hint levels per question
-- **Learning Style Detection** — Classifies users as Quick Learner, Analytical, Methodical, or Visual/Structured based on response time and hint usage
-- **Personalized Profile** — Generates accuracy scores, average response time, skill strengths, growth areas, and level-specific recommendations
-- **Practice Quiz** — A 5-question follow-up quiz with previous/next navigation and a quick-access question panel
-- **Score Completion** — Animated SVG arc score display with canvas-confetti celebration on success
-- **Zero Backend** — Fully self-contained; all logic runs client-side with dummy data fallbacks
+- **Google Sign-In** — Authentication via Firebase Authentication (Google popup); the ID token is verified server-side by the backend.
+- **Diagnostic Assessment** — A 12-question diagnostic covering the major English tenses, with 3 progressive hint levels per question.
+- **Practice Quiz** — A 12-question follow-up session with previous/next navigation and a quick-access question panel.
+- **Behaviour Telemetry** — Per-question tracking of duration, visit count, hint read time, max hint unlocked, answer-change sequence, confidence (first/final), struggle indicators, and window focus loss — persisted to `localStorage` and exportable as CSV.
+- **Confidence Picker** — After each answer the learner rates how sure they are (*Yakin* / *Ragu-ragu*), feeding the confidence telemetry.
+- **Learning Style Detection** — Classifies users based on response time and hint usage, and generates accuracy, average response time, strengths, growth areas, and recommendations.
+- **Score Completion** — Animated SVG arc score with canvas-confetti celebration and one-click `behaviour-<session>.csv` download.
 
 ---
 
 ## Tech Stack
 
-| Layer      | Technology       |
-| ---------- | ---------------- |
-| Framework  | React 19         |
-| Build Tool | Vite 8           |
-| Animations | Framer Motion 12 |
-| CSS        | Tailwind CSS v4  |
-| Icons      | Lucide React     |
-| Confetti   | canvas-confetti  |
+| Layer            | Technology                          |
+| ---------------- | ----------------------------------- |
+| Frontend         | React 19, Vite 8                    |
+| Animations       | Framer Motion 12                    |
+| Styling          | Tailwind CSS v4, inline styles      |
+| Icons / Confetti | Lucide React, canvas-confetti       |
+| Auth (client)    | Firebase Authentication (Google)    |
+| Backend          | Node.js, Express 5                  |
+| Auth (server)    | Firebase Admin SDK (token verify)   |
 
 ---
 
 ## Project Structure
 
 ```
-src/
-├── screens/
-│   ├── Login.jsx             # Glassmorphism entry screen
-│   ├── DiagnosticIntro.jsx   # Assessment overview and notes
-│   ├── DiagnosticQuiz.jsx    # 8-question adaptive diagnostic
-│   ├── Analyzing.jsx         # Animated results processing screen
-│   ├── LearningProfile.jsx   # Personalized skill profile
-│   ├── Dashboard.jsx         # User home with stats and categories
-│   ├── PracticeQuiz.jsx      # 5-question practice session
-│   └── QuizComplete.jsx      # Score reveal with confetti
-├── hooks/
-│   └── useCountUp.js         # Animated number counter hook
-├── data/
-│   └── questions.js          # Diagnostic and practice question bank
-├── App.jsx                   # Screen router with AnimatePresence
-└── index.css                 # Global styles and keyframe animations
+.
+├── frontend/
+│   └── src/
+│       ├── screens/
+│       │   ├── Login.jsx            # Google sign-in entry screen
+│       │   ├── DiagnosticIntro.jsx  # Assessment overview
+│       │   ├── DiagnosticQuiz.jsx   # 12-question diagnostic (+ telemetry)
+│       │   ├── Analyzing.jsx        # Animated results processing
+│       │   ├── LearningProfile.jsx  # Personalized skill profile
+│       │   ├── Dashboard.jsx        # Home with stats and categories
+│       │   ├── PracticeQuiz.jsx     # 12-question practice (+ telemetry)
+│       │   └── QuizComplete.jsx     # Score reveal, confetti, CSV export
+│       ├── components/
+│       │   └── ConfidencePicker.jsx # Yakin / Ragu-ragu rating
+│       ├── lib/
+│       │   └── telemetry.js         # useQuizTelemetry hook + CSV export
+│       ├── hooks/useCountUp.js      # Animated number counter
+│       ├── data/questions.js        # Tense question bank (12 tenses × 15)
+│       ├── firebase.js              # Firebase client config
+│       └── App.jsx                  # Screen router with AnimatePresence
+│
+└── backend/
+    ├── server.js                    # Express app, port 3000
+    ├── routes/authRoutes.js         # POST /api/auth/login
+    ├── middleware/authMiddleware.js # Verifies Firebase ID token
+    ├── controllers/authController.js
+    └── config/firebase.js           # Firebase Admin init (serviceAccountKey)
 ```
 
 ---
@@ -80,10 +100,49 @@ src/
 ## Screen Flow
 
 ```
-Login → Diagnostic Intro → Diagnostic Quiz (8 questions)
-      → Analyzing → Learning Profile → Dashboard
-      → Practice Quiz (5 questions) → Quiz Complete → Dashboard
+Login (Google) → Diagnostic Intro → Diagnostic Quiz (12 questions)
+              → Analyzing → Learning Profile → Dashboard
+              → Practice Quiz (12 questions) → Quiz Complete → Dashboard
 ```
+
+---
+
+## Question Bank
+
+Questions are generated from the *PALS PIJAK capstone* dataset and cover **12 English tenses** with **15 questions each (5 easy / 5 medium / 5 hard)** — 180 questions in total. The diagnostic and practice quizzes each draw 12 questions across the tenses.
+
+Exports from `frontend/src/data/questions.js`:
+
+| Export                | Description                                  |
+| --------------------- | -------------------------------------------- |
+| `diagnosticQuestions` | 12-question diagnostic set                   |
+| `practiceQuestions`   | 12-question practice set                     |
+| `questionsByTense`    | Full bank grouped by tense (12 × 15)         |
+| `allQuestions`        | Flat list of every question in the bank      |
+
+Each question carries `questionId`, `topic`, `difficulty`/`difficultyLabel`, `idealDuration`, `answer`, and three Indonesian `hints`.
+
+---
+
+## Behaviour Telemetry
+
+`useQuizTelemetry` (in `frontend/src/lib/telemetry.js`) records one summary row per question:
+
+| Column                                | Meaning                                         |
+| ------------------------------------- | ----------------------------------------------- |
+| `total_duration_sec`                  | Total time spent on the question                |
+| `visit_count`                         | How many times the question was visited         |
+| `final_is_correct`                    | Whether the final answer was correct            |
+| `final_is_ideal_duration`             | Answered within the question's ideal time       |
+| `max_hint_unlocked`                   | Highest hint level opened (0–3)                 |
+| `total_hint_read_sec`                 | Time spent with hints visible                   |
+| `first_confidence` / `final_confidence` | Confidence rating (yakin / ragu)              |
+| `total_answer_changes`                | Number of distinct answer switches              |
+| `ever_selected_correct_answer`        | Correct option was selected at some point       |
+| `changed_mind_after_correct`          | Switched away after choosing the correct option |
+| `focus_loss_total`                    | Times the window lost focus                     |
+
+Data is stored under the `pals_telemetry` key in `localStorage` and can be downloaded as `behaviour-<session>.csv` from the Quiz Complete screen.
 
 ---
 
@@ -92,86 +151,57 @@ Login → Diagnostic Intro → Diagnostic Quiz (8 questions)
 ### Prerequisites
 
 - Node.js 18 or higher
-- npm or yarn
+- npm
+- A Firebase project with **Authentication → Google** enabled
 
-### Installation
+### 1. Frontend
 
 ```bash
-# Clone the repository
-git clone <repository-url>
 cd frontend
-
-# Install dependencies
 npm install
-
-# Start development server
 npm run dev
 ```
 
-Open [http://localhost:5173](http://localhost:5173) in your browser.
+Open [http://localhost:5173](http://localhost:5173).
+
+The Firebase **client** config lives in `frontend/src/firebase.js`. Update it to point at your own Firebase project if needed.
+
+### 2. Backend
+
+```bash
+cd backend
+npm install
+npm start          # http://localhost:3000
+```
+
+The backend verifies Firebase ID tokens, so it needs a **service account key** from the *same* Firebase project the frontend uses:
+
+1. Firebase Console → ⚙️ **Project Settings → Service accounts → Generate new private key**.
+2. Save it as `backend/config/serviceAccountKey.json`.
+
+> `serviceAccountKey.json`, `node_modules/`, and `.env` are git-ignored and must never be committed.
 
 ### Build for Production
 
 ```bash
+cd frontend
 npm run build
 npm run preview
 ```
 
 ---
 
-## Design System
+## API
 
-| Token      | Value                 | Usage                         |
-| ---------- | --------------------- | ----------------------------- |
-| Dark       | `#0d1421`             | Login background, quiz header |
-| Primary    | `#2b598f`             | Buttons, selected states      |
-| Sky        | `#5aabde` / `#71bfeb` | Accents, progress bars, icons |
-| Success    | `#7a9e6e`             | Correct answers, high scores  |
-| Amber      | `#f5c842`             | Hint buttons, warnings        |
-| Surface    | `#ffffff`             | Cards and panels              |
-| Background | `#f0f4f8`             | Page backgrounds              |
-
-**Animation Principles**
-
-- Spring physics (`stiffness: 80–200, damping: 14–18`) for all entrances
-- Staggered reveal with 60–80ms delay between children
-- `AnimatePresence mode="wait"` for screen transitions
-- SVG `strokeDashoffset` animation for progress arcs
-- CSS shimmer sweep on all primary action buttons
-
----
-
-## Question Bank
-
-**Diagnostic** — 8 questions with difficulty ratings and 3 hints each:
-
-| #   | Category   | Difficulty |
-| --- | ---------- | ---------- |
-| 1   | Grammar    | Easy       |
-| 2   | Vocabulary | Medium     |
-| 3   | Grammar    | Medium     |
-| 4   | Vocabulary | Hard       |
-| 5   | Grammar    | Easy       |
-| 6   | Idioms     | Medium     |
-| 7   | Grammar    | Hard       |
-| 8   | Vocabulary | Medium     |
-
-**Practice** — 5 questions covering Grammar, Idioms, and Vocabulary.
-
----
-
-## Scoring Logic
-
-| Score Range | Level        | Label                    |
-| ----------- | ------------ | ------------------------ |
-| 80–100%     | Advanced     | ⭐ Strong English skills |
-| 55–79%      | Intermediate | 👍 Good effort           |
-| 0–54%       | Beginner     | 💪 Keep going            |
-
-Confetti triggers automatically when score ≥ 50%.
+| Method | Endpoint          | Auth                     | Description                          |
+| ------ | ----------------- | ------------------------ | ------------------------------------ |
+| `GET`  | `/`               | —                        | Health check (`PALS Backend Running`) |
+| `POST` | `/api/auth/login` | `Authorization: Bearer <idToken>` | Verifies the Firebase ID token and returns the decoded user |
 
 ---
 
 ## License
 
-MIT © 2026 PALS Team
+This project is released under the **MIT License**.
+
+© 2026 **PALS Team — PJK-GM099**. See [LICENSE](LICENSE) for details.
