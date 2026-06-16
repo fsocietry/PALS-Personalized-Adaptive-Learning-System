@@ -151,7 +151,7 @@ export default function DiagnosticIntro({ onBegin }) {
             {[
               "Take your time - there's no time limit",
               'Answer honestly for best results',
-              '8 questions covering different skills',
+              '36 questions covering all 12 tenses (easy, medium & hard)',
               'Each question has 3 hints available if needed',
               'We track hint usage to understand your learning style',
             ].map(note => (

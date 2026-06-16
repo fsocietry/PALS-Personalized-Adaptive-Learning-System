@@ -7297,3 +7297,43 @@ export const questionsByTense = [
 ]
 
 export const allQuestions = questionsByTense.flatMap(t => t.questions)
+
+// ─── Randomized diagnostic set ───────────────────────────────────────────────
+// Fisher–Yates shuffle (returns a new array, leaves the source untouched).
+function shuffle(arr) {
+  const a = [...arr]
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[a[i], a[j]] = [a[j], a[i]]
+  }
+  return a
+}
+
+const DIFFICULTIES = ['easy', 'medium', 'hard']
+
+// Build a randomized diagnostic set of 36 questions: every one of the 12 tenses
+// contributes one random question at each of the 3 difficulties (easy/medium/
+// hard) → 12 × 3 = 36. The final order is shuffled, so each new user gets a
+// different combination and sequence while coverage stays balanced.
+export function buildDiagnosticSet() {
+  const picked = []
+  for (const group of questionsByTense) {
+    for (const diff of DIFFICULTIES) {
+      const q = shuffle(group.questions.filter(q => q.difficulty === diff))[0]
+      if (q) picked.push(q)
+    }
+  }
+  return shuffle(picked)
+}
+
+// List of the 12 tenses, in canonical order — drives the dashboard categories.
+export const tenseTopics = questionsByTense.map(g => g.topic)
+
+// Questions for one tense (topic), pulled straight from the JSON pool and
+// shuffled. Pass `total` to cap the count; omit it to use every question.
+export function getPracticeSet(topic, total) {
+  const group = questionsByTense.find(g => g.topic === topic)
+  const pool = group ? group.questions : allQuestions
+  const qs = shuffle(pool)
+  return total ? qs.slice(0, total) : qs
+}

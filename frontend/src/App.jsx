@@ -8,12 +8,34 @@ import LearningProfile from './screens/LearningProfile'
 import Dashboard from './screens/Dashboard'
 import PracticeQuiz from './screens/PracticeQuiz'
 import QuizComplete from './screens/QuizComplete'
+import { recordQuizResult } from './lib/stats'
+
+// Percentage of correct answers for a finished quiz result.
+function scoreOf(r) {
+  if (!r || !r.questions || !r.answers) return 0
+  const correct = r.answers.filter((a, i) => a === r.questions[i].answer).length
+  return Math.round((correct / r.questions.length) * 100)
+}
+
+// The diagnostic test is a one-time, first-login experience. We remember per
+// user (keyed by email) whether it's been completed so returning users skip
+// straight to the dashboard after signing in again.
+const doneKey = (email) => `pals_diagnostic_done_${email || 'anon'}`
+
+function hasDoneDiagnostic(email) {
+  try { return localStorage.getItem(doneKey(email)) === '1' } catch { return false }
+}
+
+function markDiagnosticDone(email) {
+  try { localStorage.setItem(doneKey(email), '1') } catch { /* storage unavailable */ }
+}
 
 export default function App() {
   const [screen, setScreen] = useState('login')
   const [user, setUser] = useState({ name: '', email: '' })
   const [diagnosticResults, setDiagnosticResults] = useState(null)
   const [practiceResults, setPracticeResults] = useState(null)
+  const [practiceTopic, setPracticeTopic] = useState(null)
 
   return (
     <div style={{ minHeight: '100vh', background: '#f9feff' }}>
@@ -21,7 +43,11 @@ export default function App() {
         {screen === 'login' && (
           <Login
             key="login"
-            onStart={(u) => { setUser(u); setScreen('intro') }}
+            onStart={(u) => {
+              setUser(u)
+              // First-time users take the diagnostic; returning users go to the dashboard.
+              setScreen(hasDoneDiagnostic(u.email) ? 'dashboard' : 'intro')
+            }}
           />
         )}
         {screen === 'intro' && (
@@ -33,7 +59,12 @@ export default function App() {
         {screen === 'quiz' && (
           <DiagnosticQuiz
             key="quiz"
-            onComplete={(r) => { setDiagnosticResults(r); setScreen('analyzing') }}
+            onComplete={(r) => {
+              setDiagnosticResults(r)
+              markDiagnosticDone(user.email)
+              recordQuizResult(user.email, { score: scoreOf(r), type: 'diagnostic' })
+              setScreen('analyzing')
+            }}
           />
         )}
         {screen === 'analyzing' && (
@@ -54,14 +85,19 @@ export default function App() {
             key="dashboard"
             user={user}
             results={diagnosticResults}
-            onStartQuiz={() => setScreen('practice')}
+            onStartQuiz={(topic) => { setPracticeTopic(topic); setScreen('practice') }}
             onLogout={() => setScreen('login')}
           />
         )}
         {screen === 'practice' && (
           <PracticeQuiz
-            key="practice"
-            onComplete={(r) => { setPracticeResults(r); setScreen('complete') }}
+            key={`practice-${practiceTopic ?? 'all'}`}
+            topic={practiceTopic}
+            onComplete={(r) => {
+              setPracticeResults(r)
+              recordQuizResult(user.email, { score: scoreOf(r), type: 'practice', topic: practiceTopic })
+              setScreen('complete')
+            }}
             onExit={() => setScreen('dashboard')}
           />
         )}
