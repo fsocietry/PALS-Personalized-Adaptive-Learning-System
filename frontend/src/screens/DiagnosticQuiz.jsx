@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Lightbulb, CircleCheckBig } from 'lucide-react'
 import iconPng from '../assets/icon.png'
 import { diagnosticQuestions as QS } from '../data/questions'
+import { useQuizTelemetry } from '../lib/telemetry'
+import ConfidencePicker from '../components/ConfidencePicker'
 
 const DIFF_COLOR = { easy: '#7a9e6e', medium: '#5aabde', hard: '#e05252' }
 
@@ -10,8 +12,10 @@ export default function DiagnosticQuiz({ onComplete }) {
   const [idx, setIdx]           = useState(0)
   const [answers, setAnswers]   = useState(Array(QS.length).fill(null))
   const [hints, setHints]       = useState(Array(QS.length).fill(0))
+  const [confidence, setConf]   = useState(Array(QS.length).fill(null))
   const timesRef                = useRef(Array(QS.length).fill(0))
-  const tStart                  = useRef(Date.now())
+  const tStart                  = useRef(0)
+  const tele                    = useQuizTelemetry(QS)
 
   const q        = QS[idx]
   const selected = answers[idx]
@@ -19,15 +23,22 @@ export default function DiagnosticQuiz({ onComplete }) {
   const progress = ((idx + 1) / QS.length) * 100
   const dc       = DIFF_COLOR[q.difficulty] || '#5aabde'
 
-  useEffect(() => { tStart.current = Date.now() }, [idx])
+  useEffect(() => { tStart.current = Date.now(); tele.visit(idx) }, [idx, tele])
 
   const pick = i => {
     const a = [...answers]; a[idx] = i; setAnswers(a)
+    tele.select(idx, i)
   }
 
   const useHint = () => {
     if (hintN >= 3) return
     const h = [...hints]; h[idx] = hintN + 1; setHints(h)
+    tele.openHint(idx, hintN + 1)
+  }
+
+  const pickConfidence = v => {
+    const c = [...confidence]; c[idx] = v; setConf(c)
+    tele.setConfidence(idx, v)
   }
 
   const recordTime = () => {
@@ -37,7 +48,7 @@ export default function DiagnosticQuiz({ onComplete }) {
   const next = () => {
     recordTime()
     if (idx < QS.length - 1) setIdx(idx + 1)
-    else onComplete({ answers, hintsUsed: hints, times: timesRef.current, questions: QS })
+    else onComplete({ answers, hintsUsed: hints, times: timesRef.current, questions: QS, telemetry: tele.finalize() })
   }
 
   return (
@@ -238,6 +249,11 @@ export default function DiagnosticQuiz({ onComplete }) {
                   )
                 })}
               </div>
+
+              {/* Confidence */}
+              {selected !== null && (
+                <ConfidencePicker value={confidence[idx]} onPick={pickConfidence} />
+              )}
 
               {/* Next button */}
               <motion.button type="button"
