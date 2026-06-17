@@ -9,6 +9,7 @@ import Dashboard from './screens/Dashboard'
 import PracticeQuiz from './screens/PracticeQuiz'
 import QuizComplete from './screens/QuizComplete'
 import { recordQuizResult } from './lib/stats'
+import { preprocessTelemetryForML, sendToHuggingFace } from './lib/api'
 
 // Percentage of correct answers for a finished quiz result.
 function scoreOf(r) {
@@ -33,6 +34,11 @@ function markDiagnosticDone(email) {
 export default function App() {
   const [screen, setScreen] = useState('login')
   const [user, setUser] = useState({ name: '', email: '' })
+
+// Menyimpan data kuis mentah dan session ID sebelum dilempar ke Hugging Face & Drive
+  const [savedRawRecords, setSavedRawRecords] = useState([])
+  const [savedSessionId, setSavedSessionId] = useState('')
+
   const [diagnosticResults, setDiagnosticResults] = useState(null)
   const [practiceResults, setPracticeResults] = useState(null)
   const [practiceTopic, setPracticeTopic] = useState(null)
@@ -45,7 +51,6 @@ export default function App() {
             key="login"
             onStart={(u) => {
               setUser(u)
-              // First-time users take the diagnostic; returning users go to the dashboard.
               setScreen(hasDoneDiagnostic(u.email) ? 'dashboard' : 'intro')
             }}
           />
@@ -57,20 +62,30 @@ export default function App() {
           />
         )}
         {screen === 'quiz' && (
-          <DiagnosticQuiz
+        <DiagnosticQuiz
             key="quiz"
-            onComplete={(r) => {
-              setDiagnosticResults(r)
-              markDiagnosticDone(user.email)
-              recordQuizResult(user.email, { score: scoreOf(r), type: 'diagnostic' })
-              setScreen('analyzing')
+            // Tangkap 3 parameter terpisah hasil kiriman dari fungsi 'next' di kuis
+            onComplete={(quizResult, telemetryRows, sessionId) => {
+            setDiagnosticResults(quizResult)
+            setSavedRawRecords(telemetryRows)
+            setSavedSessionId(sessionId)
+            
+            markDiagnosticDone(user.email)
+            recordQuizResult(user.email, { score: scoreOf(quizResult), type: 'diagnostic' })
+            setScreen('analyzing')
             }}
-          />
+        />
         )}
         {screen === 'analyzing' && (
           <Analyzing
             key="analyzing"
-            onDone={() => setScreen('profile')}
+            sessionId={savedSessionId}
+            rawTelemetryRecords={savedRawRecords}
+            // Menerima array cluster hasil olahan model ML dari Hugging Face
+            onDone={(mlResults) => {
+              console.log("Rapor ML sukses didapatkan di App.jsx:", mlResults)
+              setScreen('profile')
+            }}
           />
         )}
         {screen === 'profile' && (
@@ -81,25 +96,45 @@ export default function App() {
           />
         )}
         {screen === 'dashboard' && (
-          <Dashboard
+        <Dashboard
             key="dashboard"
             user={user}
             results={diagnosticResults}
             onStartQuiz={(topic) => { setPracticeTopic(topic); setScreen('practice') }}
             onLogout={() => setScreen('login')}
-          />
+        />
         )}
         {screen === 'practice' && (
-          <PracticeQuiz
+        <PracticeQuiz
             key={`practice-${practiceTopic ?? 'all'}`}
             topic={practiceTopic}
-            onComplete={(r) => {
-              setPracticeResults(r)
-              recordQuizResult(user.email, { score: scoreOf(r), type: 'practice', topic: practiceTopic })
-              setScreen('complete')
+            // Ubah menjadi fungsi async agar bisa menunggu (await) respons dari Hugging Face
+            onComplete={async (r) => {
+            setPracticeResults(r)
+            recordQuizResult(user.email, { score: scoreOf(r), type: 'practice', topic: practiceTopic })
+            
+            // ─── PIPA DATA KHUSUS PRACTICE (HANYA KE HUGGING FACE) ───
+            try {
+                const telemetryRows = r.telemetry // 1. Ambil array telemetry murni dari properti .telemetry
+                
+                if (telemetryRows && telemetryRows.length > 0) {
+                console.log("Menjalankan preprocessing untuk data Practice...");
+                const mlPayloads = preprocessTelemetryForML(telemetryRows)
+                
+                console.log("Mengirim data Practice ke Hugging Face ...");
+                const hfResponses = await sendToHuggingFace(mlPayloads)
+                
+                console.log("Respons Model ML untuk Practice Sukses:", hfResponses)
+                }
+            } catch (error) {
+                console.error("🛑 Gagal memproses pipeline kognitif Practice:", error)
+            }
+            
+            // Setelah proses pengiriman selesai, lempar user ke halaman kuis selesai
+            setScreen('complete')
             }}
             onExit={() => setScreen('dashboard')}
-          />
+        />
         )}
         {screen === 'complete' && (
           <QuizComplete

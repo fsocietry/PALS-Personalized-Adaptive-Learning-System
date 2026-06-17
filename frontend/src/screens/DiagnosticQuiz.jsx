@@ -62,11 +62,25 @@ export default function DiagnosticQuiz({ onComplete }) {
     setIdx(target)
   }
 
-  const next = () => {
-    recordTime()
-    if (idx < QS.length - 1) setIdx(idx + 1)
-    else onComplete({ answers, hintsUsed: hints, times: timesRef.current, questions: QS, telemetry: tele.finalize() })
+const next = () => {
+  recordTime()
+  if (idx < QS.length - 1) {
+    setIdx(idx + 1)
+  } else {
+    const telemetryRecords = tele.finalize()
+    
+    const quizResult = {
+      answers: answers,
+      hintsUsed: hints,
+      times: timesRef.current,
+      questions: QS
+    }
+    
+    if (onComplete) {
+      onComplete(quizResult, telemetryRecords, tele.sessionId)
+    }
   }
+}
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
