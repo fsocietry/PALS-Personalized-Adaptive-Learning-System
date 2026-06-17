@@ -7,9 +7,21 @@ import ConfidencePicker from '../components/ConfidencePicker'
 
 const DIFF_COLOR = { easy: '#7a9e6e', medium: '#5aabde', hard: '#e05252' }
 
+const navButtonStyle = {
+  padding: '13px 20px',
+  borderRadius: 10,
+  background: 'rgba(255,255,255,0.06)',
+  border: '1px solid rgba(255,255,255,0.08)',
+  color: 'rgba(178,208,238,0.8)',
+  fontWeight: 600,
+  fontSize: '0.88rem',
+  cursor: 'pointer',
+  transition: 'all 0.2s ease',
+}
+
 export default function PracticeQuiz({ topic, onComplete, onExit }) {
   // Questions for the chosen tense, drawn from the JSON pool (shuffled).
-  const [QS]                    = useState(() => getPracticeSet(topic, 15))
+  const [QS]                    = useState(() => getPracticeSet(topic, 5))
   const [idx, setIdx]           = useState(0)
   const [answers, setAnswers]   = useState(() => Array(QS.length).fill(null))
   const [hints, setHints]       = useState(() => Array(QS.length).fill(0))
@@ -30,8 +42,17 @@ export default function PracticeQuiz({ topic, onComplete, onExit }) {
   useEffect(() => { tStart.current = Date.now(); tele.visit(idx) }, [idx, tele])
 
   const pick = i => {
-    const a = [...answers]; a[idx] = i; setAnswers(a)
+    const nextAnswers = [...answers]
+    nextAnswers[idx] = i
+    setAnswers(nextAnswers)
     tele.select(idx, i)
+
+    if (confidence[idx] === null) {
+      const nextConf = [...confidence]
+      nextConf[idx] = 'yakin'
+      setConf(nextConf)
+      tele.setConfidence(idx, 'yakin')
+    }
   }
 
   const useHint = () => {
@@ -291,35 +312,55 @@ export default function PracticeQuiz({ topic, onComplete, onExit }) {
 
               {/* Nav buttons */}
               <div style={{ display: 'flex', gap: 12 }}>
-                <motion.button type="button"
-                  whileTap={idx > 0 ? { scale: 0.97 } : {}}
-                  onClick={goPrev} disabled={idx === 0}
+                {/* Previous */}
+                <motion.button
+                  type="button"
+                  whileHover={{
+                    scale: 1.02,
+                    boxShadow: '0 0 0 1px rgba(113,191,235,0.18), 0 0 18px rgba(113,191,235,0.22)',
+                    background: 'rgba(255,255,255,0.1)',
+                  }}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={goPrev}
+                  disabled={idx === 0}
                   style={{
-                    padding: '13px 20px', borderRadius: 10,
-                    background: 'rgba(255,255,255,0.06)',
-                    border: '1px solid rgba(255,255,255,0.08)',
+                    ...navButtonStyle,
                     color: idx === 0 ? 'rgba(255,255,255,0.2)' : 'rgba(178,208,238,0.8)',
-                    fontWeight: 600, fontSize: '0.88rem',
                     cursor: idx === 0 ? 'not-allowed' : 'pointer',
-                    transition: 'all 0.2s ease',
-                  }}>
+                  }}
+                >
                   ← Previous
                 </motion.button>
-                <motion.button type="button"
-                  whileHover={ready ? { scale: 1.02, boxShadow: '0 12px 32px rgba(90,171,222,0.35)' } : {}}
-                  whileTap={ready ? { scale: 0.98 } : {}}
-                  onClick={goNext} disabled={!ready}
-                  className={ready ? 'shimmer-btn' : ''}
+
+                {/* Next / Finish */}
+
+                <motion.button
+                  type="button"
+                  whileHover={{
+                    scale: 1.02,
+                    boxShadow: selected
+                      ? '0 12px 32px rgba(90,171,222,0.35)'
+                      : '0 0 0 1px rgba(113,191,235,0.18), 0 0 18px rgba(113,191,235,0.22)',
+                    background: selected
+                      ? 'linear-gradient(135deg, #2b598f, #4a9acc)'
+                      : 'rgba(255,255,255,0.1)',
+                  }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={goNext}
                   style={{
-                    flex: 1, padding: '13px', borderRadius: 10, border: 'none',
-                    fontWeight: 700, fontSize: '0.9rem',
-                    background: ready ? 'linear-gradient(135deg, #2b598f, #4a9acc)' : 'rgba(255,255,255,0.05)',
-                    color: ready ? '#fff' : 'rgba(255,255,255,0.2)',
-                    cursor: ready ? 'pointer' : 'not-allowed',
-                    boxShadow: ready ? '0 6px 20px rgba(43,89,143,0.4)' : 'none',
-                    transition: 'all 0.25s ease',
-                    position: 'relative', overflow: 'hidden',
-                  }}>
+                    ...navButtonStyle,
+                    flex: 1,
+                    textAlign: 'center',
+                    background: selected
+                      ? 'linear-gradient(135deg, #2b598f, #4a9acc)'
+                      : 'rgba(255,255,255,0.05)',
+                    color: selected ? '#fff' : 'rgba(255,255,255,0.45)',
+                    boxShadow: selected
+                      ? '0 6px 20px rgba(43,89,143,0.4)'
+                      : 'none',
+                    cursor: 'pointer',
+                  }}
+                >
                   {idx < QS.length - 1 ? 'Next Question →' : 'Finish Quiz ✓'}
                 </motion.button>
               </div>
@@ -402,26 +443,56 @@ export default function PracticeQuiz({ topic, onComplete, onExit }) {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 10 }}>
                 {QS.map((_, i) => {
                   const answered = answers[i] !== null
-                  const current  = i === idx
+                  const current = i === idx
+                  const conf = confidence[i]
+
+                  let bg = 'rgba(255,255,255,0.05)'
+                  let border = '1px solid rgba(255,255,255,0.1)'
+                  let text = 'rgba(255,255,255,0.65)'
+
+                  if (current) {
+                    bg = 'linear-gradient(135deg, #2b598f, #4a9acc)'
+                    border = '1.5px solid #71bfeb'
+                    text = '#fff'
+                  } else if (conf === 'yakin') {
+                    bg = 'rgba(122,158,110,0.18)'
+                    border = '1.5px solid rgba(122,158,110,0.5)'
+                    text = '#9fc890'
+                  } else if (conf === 'ragu') {
+                    bg = 'rgba(245,200,66,0.18)'
+                    border = '1.5px solid rgba(245,200,66,0.5)'
+                    text = '#f5c842'
+                  } else if (conf === 'tidak') {
+                    bg = 'rgba(224,82,82,0.18)'
+                    border = '1.5px solid rgba(224,82,82,0.5)'
+                    text = '#f08a8a'
+                  } else if (answered) {
+                    bg = 'rgba(255,255,255,0.06)'
+                    border = '1.5px solid rgba(255,255,255,0.1)'
+                    text = 'rgba(255,255,255,0.65)'
+                  }
+
                   return (
                     <div key={i} style={{ position: 'relative' }}>
-                      <motion.button type="button"
+                      <motion.button
                         data-idx={i}
-                        whileHover={{ scale: 1.06 }} whileTap={{ scale: 0.94 }}
                         onClick={navTo}
                         style={{
-                          width: '100%', aspectRatio: '1 / 1', borderRadius: 12, cursor: 'pointer',
-                          fontWeight: 700, fontSize: '0.95rem',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          background: current
-                            ? 'linear-gradient(135deg, #2b598f, #4a9acc)'
-                            : answered ? 'rgba(122,158,110,0.18)' : 'rgba(255,255,255,0.05)',
-                          border: current
-                            ? '1.5px solid #71bfeb'
-                            : answered ? '1.5px solid rgba(122,158,110,0.5)' : '1.5px solid rgba(255,255,255,0.1)',
-                          color: current ? '#fff' : answered ? '#9fc890' : 'rgba(255,255,255,0.65)',
+                          width: '100%',
+                          aspectRatio: '1 / 1',
+                          borderRadius: 12,
+                          cursor: 'pointer',
+                          fontWeight: 700,
+                          fontSize: '0.95rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          background: bg,
+                          border,
+                          color: text,
                           transition: 'all 0.15s ease',
-                        }}>
+                        }}
+                      >
                         {i + 1}
                       </motion.button>
                       {hints[i] > 0 && (
@@ -444,7 +515,9 @@ export default function PracticeQuiz({ topic, onComplete, onExit }) {
               <div style={{ display: 'flex', gap: 16, marginTop: 18, flexWrap: 'wrap' }}>
                 {[
                   { c: 'linear-gradient(135deg, #2b598f, #4a9acc)', label: 'Saat ini' },
-                  { c: 'rgba(122,158,110,0.5)', label: 'Sudah dijawab' },
+                  { c: 'rgba(122,158,110,0.5)', label: 'Yakin' },
+                  { c: 'rgba(245,200,66,0.5)', label: 'Ragu-ragu' },
+                  { c: 'rgba(224,82,82,0.5)', label: 'Tidak yakin' },
                   { c: 'rgba(255,255,255,0.12)', label: 'Belum dijawab' },
                 ].map(l => (
                   <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>

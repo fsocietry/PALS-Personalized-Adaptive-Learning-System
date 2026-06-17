@@ -19,7 +19,7 @@ const familyOf = (topic) =>
 // One category per tense, sourced from the question JSON.
 const CATS = questionsByTense.map((g) => {
   const f = FAMILY[familyOf(g.topic)]
-  return { Icon: f.Icon, color: f.color, name: g.topic, sub: `${g.questions.length} questions` }
+  return { Icon: f.Icon, color: f.color, name: g.topic, sub: `${g.questions.length-10} questions` }
 })
 
 const glass = {

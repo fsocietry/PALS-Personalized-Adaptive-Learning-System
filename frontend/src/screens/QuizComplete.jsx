@@ -3,7 +3,6 @@ import { motion } from 'framer-motion'
 import { Award, Lightbulb, ChevronRight, Download } from 'lucide-react'
 import confetti from 'canvas-confetti'
 import { useCountUp } from '../hooks/useCountUp'
-import { downloadCSV } from '../lib/telemetry'
 
 function compute(results) {
   if (!results) return { correct: 4, total: 5, score: 80, hints: 1 }
@@ -21,7 +20,6 @@ const CIRC = 2 * Math.PI * R
 
 export default function QuizComplete({ results, onBack }) {
   const { correct, total, score, hints } = compute(results)
-  const telemetry = results?.telemetry || []
   const display = useCountUp(score, 1300, 500)
   const fired   = useRef(false)
   const isGood  = score >= 70
@@ -207,22 +205,6 @@ export default function QuizComplete({ results, onBack }) {
             }}>
             Back to Dashboard <ChevronRight size={16} />
           </motion.button>
-
-          {telemetry.length > 0 && (
-            <motion.button type="button"
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.2 }}
-              whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
-              onClick={() => downloadCSV(telemetry, `behaviour-${telemetry[0].session_id}.csv`)}
-              style={{
-                width: '100%', padding: '13px', borderRadius: 12, marginTop: 12, cursor: 'pointer',
-                background: 'rgba(255,255,255,0.06)',
-                border: '1px solid rgba(255,255,255,0.12)',
-                color: 'rgba(178,208,238,0.85)', fontWeight: 600, fontSize: '0.86rem',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
-              }}>
-              <Download size={15} /> Download behaviour data (CSV)
-            </motion.button>
-          )}
         </motion.div>
       </div>
     </motion.div>

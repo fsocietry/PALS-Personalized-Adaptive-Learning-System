@@ -59,18 +59,6 @@ export function telemetryToCSV(records) {
   return [head, ...rows].join('\n')
 }
 
-export function downloadCSV(records, filename = 'behaviour.csv') {
-  const blob = new Blob([telemetryToCSV(records)], { type: 'text/csv;charset=utf-8;' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = filename
-  document.body.appendChild(a)
-  a.click()
-  a.remove()
-  URL.revokeObjectURL(url)
-}
-
 // ─── React hook ──────────────────────────────────────────────────────────────
 // Tracks per-question behaviour while the user works through a quiz.
 //
