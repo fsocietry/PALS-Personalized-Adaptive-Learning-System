@@ -12,18 +12,6 @@ const CLUSTER_BADGES = {
   'none': { text: 'Pending', color: 'rgba(178,208,238,0.4)', bg: 'rgba(255,255,255,0.03)', border: 'rgba(255,255,255,0.06)' } 
 }
 
-// Map rumpun tenses (Present / Past / Future)
-const FAMILY = {
-  Present: { Icon: Clock,   color: '#7a9e6e' },
-  Past:    { Icon: History, color: '#f5c842' },
-  Future:  { Icon: null,     color: '#5aabde' }, 
-}
-
-const familyOf = (topic) =>
-  topic.startsWith('Simple Present') || topic.startsWith('Present') ? 'Present'
-  : topic.startsWith('Simple Past') || topic.startsWith('Past') ? 'Past'
-  : 'Future'
-
 // Sinkronisasi kategori tenses dari JSON data kuis
 const CATS = questionsByTense.map((g) => {
   return { name: g.topic, sub: `${g.questions.length - 10} Dynamic Questions` }
@@ -64,7 +52,7 @@ export default function Dashboard({ user, onStartQuiz, onLogout, cognitiveProfil
       weightCount++;
     });
 
-    // Tambahkan bobot rata-rata dari paket Diagnostic Test jika ada
+    // ✨ FIXED: Pembersihan typo fungsi q => pada akumulasi reduce diagnostic score
     if (hasCompletedDiagnosticPack) {
       const diagAvg = Math.round(diagnosticRows.reduce((sum, d) => sum + (Number(d.score) || 0), 0) / diagnosticRows.length);
       scoreSum += diagAvg;
@@ -213,6 +201,7 @@ export default function Dashboard({ user, onStartQuiz, onLogout, cognitiveProfil
               transition={{ delay: 0.08 + i * 0.08, type: 'spring', stiffness: 100 }}
               style={{ ...glass, borderRadius: 14, padding: '18px 16px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                {/* ✨ FIXED: Pembersihan duplikasi properti style background */}
                 <div style={{
                   width: 34, height: 34, borderRadius: '50%',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
@@ -333,7 +322,6 @@ export default function Dashboard({ user, onStartQuiz, onLogout, cognitiveProfil
                 </p>
               </div>
             ) : (
-              /* 🎯 EXACT MATCH STYLE: Menggunakan class 'cats-scroll' dengan max-height 190 dan padding 6 murni simetris */
               <div className="cats-scroll" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 10, maxHeight: 190, overflowY: 'auto', paddingRight: 6 }}>
                 {uniqueHistoryDisplayList.map((session, sIdx) => {
                   const formattedDate = session.createdAt ? new Date(session.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit' }) : "Just Now";
@@ -348,7 +336,6 @@ export default function Dashboard({ user, onStartQuiz, onLogout, cognitiveProfil
                       }}
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        {/* 🚫 NO NUMBER BADGE: Elemen nomor lingkaran dilepas total agar tulisan rata kiri rapi */}
                         <div>
                           <p style={{ color: '#fff', fontSize: '0.86rem', fontWeight: 600, margin: 0 }}>
                             {session.topicName}
@@ -379,7 +366,6 @@ export default function Dashboard({ user, onStartQuiz, onLogout, cognitiveProfil
   )
 }
 
-// Tambahkan konstanta array topik tenses lokal agar tidak memicu eror 'TENSE_TOPICS is not defined'
 const TENSE_TOPICS = [
   "Simple Present Tense", "Present Continuous Tense", "Present Perfect Tense", "Present Perfect Continuous Tense",
   "Simple Past Tense", "Past Continuous Tense", "Past Perfect Tense", "Past Perfect Continuous Tense",

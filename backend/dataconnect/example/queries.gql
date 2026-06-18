@@ -1,9 +1,0 @@
-# Mengambil daftar kuis berdasarkan userId untuk kalkulasi dashboard
-query ListQuizAttemptsByUser($userId: String!) @auth(level: USER) {
-  quizAttempts(where: { userId: { eq: $userId } }) {
-    id
-    topicIndex
-    score
-    createdAt
-  }
-}
