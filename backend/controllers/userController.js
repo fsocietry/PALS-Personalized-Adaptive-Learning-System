@@ -32,5 +32,4 @@ exports.getUserProfile = async (req, res) => {
       message: "Gagal memproses profil kognitif di database SQL",
       error: error.message 
     });
-  }
-};
+  }}
