@@ -1,9 +1,7 @@
-import { useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { User, LogOut, Award, Clock, TrendingUp, ChevronRight, History, Rocket } from 'lucide-react'
 import { useCountUp } from '../hooks/useCountUp'
 import { questionsByTense } from '../data/questions'
-import { loadQuizHistory, computeStats } from '../lib/stats'
 
 // Icon + colour per tense family (present / past / future).
 const FAMILY = {
@@ -30,12 +28,14 @@ const glass = {
   boxShadow: '0 8px 32px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.07)',
 }
 
-export default function Dashboard({ user, onStartQuiz, onLogout }) {
-  // Real stats from this user's saved quiz history.
-  const stats  = useMemo(() => computeStats(loadQuizHistory(user?.email)), [user?.email])
-  const avg    = useCountUp(stats.avgScore,     1000, 150)
-  const taken  = useCountUp(stats.quizzesTaken,  900, 300)
-  const streak = useCountUp(stats.streakDays,    700, 450)
+// 2. TAMBAHKAN prop 'stats' dari App.jsx
+export default function Dashboard({ user, stats, onStartQuiz, onLogout }) {
+  
+  // 3. GUNAKAN data dari SQL Backend (stats prop)
+  // Fallback ke 0 jika data belum termuat sempurna
+  const avg    = useCountUp(stats?.averageScore || 0,     1000, 150)
+  const taken  = useCountUp(stats?.quizzesTaken || 0,     900, 300)
+  const streak = useCountUp(stats?.streak || 0,           700, 450)
 
   const STATS = [
     { icon: <Award size={17} color="#fff" />,       bg: 'linear-gradient(135deg,#2b598f,#3d7ab5)', label: 'Average Score', val: `${avg}%`                              },

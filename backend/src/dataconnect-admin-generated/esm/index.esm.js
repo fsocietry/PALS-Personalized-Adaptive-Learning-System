@@ -48,3 +48,9 @@ export function insertTopicProfile(dcOrVarsOrOptions, varsOrOptions, options) {
   return dcInstance.executeMutation('InsertTopicProfile', inputVars, inputOpts);
 }
 
+export function listQuizAttemptsByUser(dcOrVarsOrOptions, varsOrOptions, options) {
+  const { dc: dcInstance, vars: inputVars, options: inputOpts} = validateAdminArgs(connectorConfig, dcOrVarsOrOptions, varsOrOptions, options, true, true);
+  dcInstance.useGen(true);
+  return dcInstance.executeQuery('ListQuizAttemptsByUser', inputVars, inputOpts);
+}
+

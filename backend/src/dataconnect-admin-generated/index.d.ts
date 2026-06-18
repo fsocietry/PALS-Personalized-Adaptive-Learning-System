@@ -99,6 +99,19 @@ export interface LearningPath_Key {
   __typename?: 'LearningPath_Key';
 }
 
+export interface ListQuizAttemptsByUserData {
+  quizAttempts: ({
+    id: UUIDString;
+    topicIndex: number;
+    score: number;
+    createdAt: TimestampString;
+  } & QuizAttempt_Key)[];
+}
+
+export interface ListQuizAttemptsByUserVariables {
+  userId: string;
+}
+
 export interface Prediction_Key {
   id: UUIDString;
   __typename?: 'Prediction_Key';
@@ -174,4 +187,9 @@ export function insertLearningPath(vars: InsertLearningPathVariables, options?: 
 export function insertTopicProfile(dc: DataConnect, vars: InsertTopicProfileVariables, options?: OperationOptions): Promise<ExecuteOperationResponse<InsertTopicProfileData>>;
 /** Generated Node Admin SDK operation action function for the 'InsertTopicProfile' Mutation. Allow users to pass in custom DataConnect instances. */
 export function insertTopicProfile(vars: InsertTopicProfileVariables, options?: OperationOptions): Promise<ExecuteOperationResponse<InsertTopicProfileData>>;
+
+/** Generated Node Admin SDK operation action function for the 'ListQuizAttemptsByUser' Query. Allow users to execute without passing in DataConnect. */
+export function listQuizAttemptsByUser(dc: DataConnect, vars: ListQuizAttemptsByUserVariables, options?: OperationOptions): Promise<ExecuteOperationResponse<ListQuizAttemptsByUserData>>;
+/** Generated Node Admin SDK operation action function for the 'ListQuizAttemptsByUser' Query. Allow users to pass in custom DataConnect instances. */
+export function listQuizAttemptsByUser(vars: ListQuizAttemptsByUserVariables, options?: OperationOptions): Promise<ExecuteOperationResponse<ListQuizAttemptsByUserData>>;
 

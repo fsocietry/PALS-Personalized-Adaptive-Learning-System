@@ -176,4 +176,32 @@ export async function saveQuizToBackend(payload) {
     console.error("🛑 Error di saveQuizToBackend:", error);
     throw error;
   }
+} 
+
+/**
+ * 5. GET DARI DATABASE SQL: Mengambil statistik user (Diagnostic & Dashboard)
+ */
+export async function fetchUserStats() {
+  try {
+    const user = auth.currentUser;
+    if (!user) throw new Error("User tidak ditemukan (belum login)");
+
+    const token = await user.getIdToken();
+
+    const response = await fetch(`${API_URL}/api/user/stats`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error("Gagal mengambil data statistik dari backend");
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("🛑 Error di fetchUserStats:", error);
+    return null;
+  }
 }
