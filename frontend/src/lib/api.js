@@ -2,21 +2,21 @@
 // ─── PRODUCTION PIPELINE: PREPROCESSING & POST INFRASTRUCTURE ───────────────
 // ============================================================================
 
-import { auth } from '../firebase'; // <--- TAMBAHAN: Import Firebase Auth
+import { auth } from '../firebase';
 
 const HF_API_URL = "https://maisorpt-pals-model-api.hf.space/predict";
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyLwiIOsrpRRe-KbYK2Hku2p5hci3D8ZNNtKRRYKtlSNwzx8CGQ4tmBeDAMd5rglyaB7A/exec";
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'; // <--- TAMBAHAN: URL Backend Node.js
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
-/**
- * 1. PREPROCESSING: Mengambil output flat dari telemetry.js, mengelompokkannya per topik,
- * dan menghitung rata-rata nilai fitur (mean) untuk disuapi ke Hugging Face.
- * @param {Array} records - Hasil return array mentah dari fungsi finalize() di telemetry.js
- */
+export const TENSE_TOPICS = [
+  "Simple Present Tense", "Present Continuous Tense", "Present Perfect Tense", "Present Perfect Continuous Tense",
+  "Simple Past Tense", "Past Continuous Tense", "Past Perfect Tense", "Past Perfect Continuous Tense",
+  "Simple Future Tense", "Future Continuous Tense", "Future Perfect Tense", "Future Perfect Continuous Tense"
+];
+
 export function preprocessTelemetryForML(records) {
   const topics = {};
 
-  // Kelompokkan baris pengerjaan berdasarkan nama topik
   records.forEach((row) => {
     if (!row.topic) return;
     const cleanTopic = row.topic.replace(/\s+/g, ' ').trim();
@@ -24,7 +24,6 @@ export function preprocessTelemetryForML(records) {
     topics[cleanTopic].push(row);
   });
 
-  // Iterasi setiap grup topik untuk menghitung rasio/rata-rata (mean)
   return Object.keys(topics).map((topicName) => {
     const group = topics[topicName];
     const totalQuestions = group.length;
@@ -36,20 +35,24 @@ export function preprocessTelemetryForML(records) {
     let sumConf = 0;
 
     group.forEach((row) => {
-      // Mengakses field menggunakan penamaan flat string sesuai output telemetry.js produksi
       sumCorrect += row['summary.final_is_correct'] || 0;
       sumHint += (row['summary.max_hint_unlocked'] > 0) ? 1 : 0;
       
-      // Indikator Overthinking (Total ganti jawaban > 1 ATAU ganti pikiran setelah sempat benar)
       const isOverthinking = (row['summary.total_answer_changes'] > 1 || 
                               row['summary.struggle_indicators.changed_mind_after_correct'] === true);
       sumOverthink += isOverthinking ? 1 : 0;
       
       sumTime += row['summary.final_is_ideal_duration'] ? 1 : 0;
 
-      // Konversi teks tingkat keyakinan (confidence) menjadi skor ordinal numerik (0, 1, 2)
-      const confMap = { 'tidak tahu': 0, 'ragu-ragu': 1, 'yakin': 2 };
-      sumConf += confMap[row['summary.final_confidence']] ?? 2;
+      // 🎯 FIXED: Pemetaan SAKLEK sesuai notebook ML lo (Yakin = 2)
+      const rawConf = String(row['summary.final_confidence']).toLowerCase().trim();
+      let mlConfValue = 2; // Default Yakin (2)
+      
+      if (rawConf.includes('ragu')) mlConfValue = 1;
+      else if (rawConf.includes('tidak') || rawConf.includes('no')) mlConfValue = 0;
+      else if (rawConf.includes('yakin') || rawConf.includes('yes')) mlConfValue = 2;
+
+      sumConf += mlConfValue;
     });
 
     return {
@@ -65,11 +68,8 @@ export function preprocessTelemetryForML(records) {
   });
 }
 
-/**
- * 2. POST KE HUGGING FACE API: Mengeksekusi request prediksi per topik secara paralel
- */
 export async function sendToHuggingFace(preprocessedPayloads) {
-  console.log("🚀 Menembak Hugging Face API...", preprocessedPayloads);
+  console.log("🚀 Executing Hugging Face Inference Engine...", preprocessedPayloads);
   
   const promises = preprocessedPayloads.map(async (item) => {
     try {
@@ -82,11 +82,119 @@ export async function sendToHuggingFace(preprocessedPayloads) {
       const data = await response.json();
       return { topic: item.topic, success: true, ...data };
     } catch (err) {
-      console.error(`🛑 Gagal melakukan inference untuk topik ${item.topic}:`, err);
+      console.error(`🛑 Inference failure on node ${item.topic}:`, err);
       return { topic: item.topic, success: false, error: err.message };
     }
   });
   return Promise.all(promises);
+}
+
+export async function saveQuizToBackend(payload) {
+  try {
+    const user = auth.currentUser;
+    if (!user) throw new Error("User session expired");
+
+    const token = await user.getIdToken();
+    const response = await fetch(`${API_URL}/api/quiz/submit`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      const errData = await response.json();
+      throw new Error(errData.message || "Failed synchronization with backend SQL connect node");
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("🛑 Synchronization node failure:", error);
+    throw error;
+  }
+}
+
+export async function fetchUserProfileFromPostgres(email) {
+  try {
+    const user = auth.currentUser;
+    if (!user) return null;
+    const token = await user.getIdToken();
+    
+    const response = await fetch(`${API_URL}/api/user/profile`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    
+    if (!response.ok) return null;
+    return await response.json();
+  } catch (err) {
+    console.error("🛑 Critical profiling node error:", err);
+    return null;
+  }
+}
+
+export async function fetchQuizHistoryFromPostgres() {
+  try {
+    const user = auth.currentUser;
+    if (!user) {
+      console.warn("⚠️ [api.js] fetchQuizHistory skipped: No authenticated Firebase user found.");
+      return [];
+    }
+    const token = await user.getIdToken();
+
+    console.log("📡 [api.js] Shooting API request to:", `${API_URL}/api/quiz/history`);
+    const response = await fetch(`${API_URL}/api/quiz/history`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+
+    // 🎯 BONGKAR TOPENG EROR: Tampilkan status HTTP asli dari backend Node.js lo!
+    if (!response.ok) {
+      const errorResponseText = await response.text();
+      console.error(`🛑 [api.js] Backend REJECTED request! Status: ${response.status} (${response.statusText})`);
+      console.error(`🛑 [api.js] Backend Error Message Content:`, errorResponseText);
+      return [];
+    }
+
+    const data = await response.json();
+    console.log("🍏 [api.js] Successfully received data array from PostgreSQL:", data);
+    return data;
+  } catch (err) {
+    console.error("🛑 [api.js] Network/Operational crash inside fetchQuizHistoryFromPostgres:", err);
+    return [];
+  }
+}
+
+export function computeStats(history) {
+  const historyArray = Array.isArray(history) ? history : [];
+  const quizzesTaken = historyArray.length;
+  const avgScore = quizzesTaken
+    ? Math.round(historyArray.reduce((s, h) => s + (h.score || 0), 0) / quizzesTaken)
+    : 0;
+    
+  return { quizzesTaken, avgScore, streakDays: computeStreak(historyArray) };
+}
+
+export function computeStreak(history) {
+  if (!history || !history.length) return 0;
+  
+  const days = [...new Set(history.map((h) => {
+    if (h.date) return h.date;
+    if (h.createdAt) return h.createdAt.slice(0, 10);
+    return new Date().toISOString().slice(0, 10);
+  }))].sort().reverse();
+  
+  let streak = 1;
+  let prev = new Date(days[0]);
+  
+  for (let i = 1; i < days.length; i++) {
+    const cur = new Date(days[i]);
+    const diff = Math.round((prev - cur) / 86400000);
+    if (diff === 1) { streak++; prev = cur; }
+    else if (diff === 0) continue;
+    else break;
+  }
+  return streak;
 }
 
 /**
@@ -140,40 +248,5 @@ export async function sendToGoogleDrive(globalSessionId, records) {
   } catch (err) {
     console.error("🛑 Gagal menyimpan data ke Google Drive Sheets:", err);
     return { success: false, error: err.message };
-  }
-}
-
-/**
- * 4. POST KE DATABASE SQL (BACKEND PALS): Menyimpan hasil kuis dan prediksi model AI
- * TAMBAHAN BARU
- */
-export async function saveQuizToBackend(payload) {
-  try {
-    // 1. Pastikan user sedang login
-    const user = auth.currentUser;
-    if (!user) throw new Error("User tidak ditemukan (belum login)");
-
-    // 2. Dapatkan token yang valid
-    const token = await user.getIdToken();
-
-    // 3. Kirim POST request ke backend Node.js
-    const response = await fetch(`${API_URL}/api/quiz/submit`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}` // Masukkan token di sini
-      },
-      body: JSON.stringify(payload)
-    });
-
-    if (!response.ok) {
-      const errData = await response.json();
-      throw new Error(errData.message || "Gagal menyimpan ke backend");
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error("🛑 Error di saveQuizToBackend:", error);
-    throw error;
   }
 }

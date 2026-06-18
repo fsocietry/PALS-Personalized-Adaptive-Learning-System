@@ -26,7 +26,7 @@ export default function Analyzing({ sessionId, rawTelemetryRecords, onDone }) {
     return () => clearInterval(interval)
   }, [])
 
-  // ENGINE PIPELINE POST PARALEL
+  // ENGINE PIPELINE POST BACKGROUND OPERATIONAL
   useEffect(() => {
     if (hasTriggered.current) return
     hasTriggered.current = true
@@ -41,13 +41,13 @@ export default function Analyzing({ sessionId, rawTelemetryRecords, onDone }) {
         // 1. Preprocessing lokal di browser client
         const mlPayloads = preprocessTelemetryForML(rawTelemetryRecords)
 
-        // 2. Eksekusi POST Request secara paralel ke Hugging Face dan Google Drive Webhook
-        const [driveResponse, hfResponses] = await Promise.all([
-          sendToGoogleDrive(sessionId, rawTelemetryRecords),
-          sendToHuggingFace(mlPayloads)
-        ])
+        // ✅ FIX PERFORMA: Panggil Drive Webhook secara independen di background (Fire-and-Forget)
+        // Langkah ini tidak akan menahan loading spinner kamu jika Google Apps Script lambat merespons.
+        sendToGoogleDrive(sessionId, rawTelemetryRecords)
 
-        console.log("💾 Google Drive Sheets Backup Status:", driveResponse)
+        // 2. Cukup await respon inferensi kognitif dari Hugging Face saja
+        console.log("🧠 Executing Hugging Face Inference Node...")
+        const hfResponses = await sendToHuggingFace(mlPayloads)
         console.log("🧠 Hugging Face Inference Results:", hfResponses)
 
         // 3. Berhasil! Beri delay sedikit agar transisi mulus, lalu panggil callback onDone
@@ -211,7 +211,9 @@ export default function Analyzing({ sessionId, rawTelemetryRecords, onDone }) {
                     {isDone ? (
                       <CircleCheckBig size={20} color="#7a9e6e" />
                     ) : isActive ? (
-                      <Loader2 size={20} color="#71bfeb" className="animate-spin" />
+                      <motion.div style={{ display: 'flex', alignItems: 'center' }}>
+                        <Loader2 size={20} color="#71bfeb" style={{ animation: 'spin 1s linear infinite' }} />
+                      </motion.div>
                     ) : (
                       <div style={{ width: 20, height: 20, borderRadius: '50%', border: '2px solid rgba(255,255,255,0.2)' }} />
                     )}

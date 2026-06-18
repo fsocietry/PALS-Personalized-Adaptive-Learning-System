@@ -1,5 +1,7 @@
-import { useState } from 'react'
-import { AnimatePresence } from 'framer-motion'
+import { useState, useEffect, useCallback } from 'react'
+import { onAuthStateChanged } from 'firebase/auth' 
+import { auth } from './firebase' 
+import { AnimatePresence } from 'framer-motion' 
 import Login from './screens/Login'
 import DiagnosticIntro from './screens/DiagnosticIntro'
 import DiagnosticQuiz from './screens/DiagnosticQuiz'
@@ -9,70 +11,148 @@ import Dashboard from './screens/Dashboard'
 import PracticeQuiz from './screens/PracticeQuiz'
 import QuizComplete from './screens/QuizComplete'
 import { recordQuizResult } from './lib/stats'
-import { preprocessTelemetryForML, sendToHuggingFace, saveQuizToBackend } from './lib/api'
+import { 
+  preprocessTelemetryForML, 
+  sendToHuggingFace, 
+  saveQuizToBackend,
+  fetchUserProfileFromPostgres, 
+  fetchQuizHistoryFromPostgres, 
+  TENSE_TOPICS                  
+} from './lib/api'
 
-// Percentage of correct answers for a finished quiz result.
 function scoreOf(r) {
   if (!r || !r.questions || !r.answers) return 0
   const correct = r.answers.filter((a, i) => a === r.questions[i].answer).length
   return Math.round((correct / r.questions.length) * 100)
 }
 
-// The diagnostic test is a one-time, first-login experience. We remember per
-// user (keyed by email) whether it's been completed so returning users skip
-// straight to the dashboard after signing in again.
 const doneKey = (email) => `pals_diagnostic_done_${email || 'anon'}`
-
 function hasDoneDiagnostic(email) {
   try { return localStorage.getItem(doneKey(email)) === '1' } catch { return false }
 }
-
 function markDiagnosticDone(email) {
-  try { localStorage.setItem(doneKey(email), '1') } catch { /* storage unavailable */ }
+  try { localStorage.setItem(doneKey(email), '1') } catch {}
 }
 
 export default function App() {
   const [screen, setScreen] = useState('login')
   const [user, setUser] = useState({ name: '', email: '' })
+  const [isAuthChecking, setIsAuthChecking] = useState(true)
 
-  // Menyimpan data kuis mentah dan session ID sebelum dilempar ke Hugging Face & Drive
   const [savedRawRecords, setSavedRawRecords] = useState([])
   const [savedSessionId, setSavedSessionId] = useState('')
 
   const [diagnosticResults, setDiagnosticResults] = useState(null)
   const [practiceResults, setPracticeResults] = useState(null)
   const [practiceTopic, setPracticeTopic] = useState(null)
-  
-  // STATE BARU UNTUK MENAMPUNG HASIL AI
+
+  const [hasDiagnostic, setHasDiagnostic] = useState(false)
   const [aiProfileData, setAiProfileData] = useState(null)
+
+  const [quizHistory, setQuizHistory] = useState([])
+  const [cognitiveProfile, setCognitiveProfile] = useState(null)
+  const [adaptiveFallbackTopic, setAdaptiveFallbackTopic] = useState(null)
+  const [isSmartPractice, setIsSmartPractice] = useState(false)
+
+  const syncPostgresProfile = useCallback(async (email) => {
+    if (!email) return
+    try {
+      console.log("🔍 [App.jsx] Fetching profile & history for:", email);
+      const [postgresData, historyData] = await Promise.all([
+        fetchUserProfileFromPostgres(email),
+        fetchQuizHistoryFromPostgres()
+      ]);
+
+      console.log("📦 [App.jsx] Raw Postgres User Profile Data:", postgresData);
+      
+      // 🎯 DIAGNOSTIC LOG: Tampilkan tabel riwayat kuis mentah ke console!
+      if (historyData && historyData.length > 0) {
+        console.group("📜 [App.jsx] SUCCESS: Fetched quizAttempt Data from PostgreSQL");
+        console.table(historyData);
+        console.groupEnd();
+      } else {
+        console.log("⚠️ [App.jsx] WARNING: quizAttempt table is empty or failed to load.");
+      }
+
+      setQuizHistory(historyData || []);
+
+      const profile = postgresData?.topicProfile;
+      const isProfileCalibrated = profile && TENSE_TOPICS.some((_, idx) => {
+        const val = profile[`topic${idx + 1}`];
+        return val !== undefined && val !== -1 && val !== null;
+      });
+
+      if (isProfileCalibrated) {
+        console.log("✅ [App.jsx] Profile calibrated, mapping topics...");
+        const resolvedMap = {};
+        TENSE_TOPICS.forEach((topicName, idx) => {
+          const val = profile[`topic${idx + 1}`];
+          resolvedMap[topicName] = val !== undefined ? val : -1;
+        });
+        
+        setCognitiveProfile(resolvedMap);
+        setHasDiagnostic(true); 
+
+        let weakestTopic = TENSE_TOPICS[0];
+        let maxClusterSeverity = -1;
+        TENSE_TOPICS.forEach((topicName) => {
+          const currentCluster = resolvedMap[topicName] || 0;
+          if (currentCluster > maxClusterSeverity) {
+            maxClusterSeverity = currentCluster;
+            weakestTopic = topicName;
+          }
+        });
+        setAdaptiveFallbackTopic(weakestTopic);
+      } else {
+        console.log("⚠️ [App.jsx] No calibrated profile found. Mandatory Diagnostic Active.");
+        const resolvedMap = {};
+        TENSE_TOPICS.forEach((topicName) => {
+          resolvedMap[topicName] = -1;
+        });
+        setCognitiveProfile(resolvedMap);
+        setHasDiagnostic(false); 
+      }
+    } catch (err) {
+      console.error("🛑 [App.jsx] Gagal sinkronisasi dari PostgreSQL:", err)
+      setCognitiveProfile({})
+      setHasDiagnostic(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      if (currentUser) {
+        setUser({ name: currentUser.displayName || '', email: currentUser.email })
+        await syncPostgresProfile(currentUser.email)
+        setScreen('dashboard') 
+      } else {
+        setScreen('login')
+      }
+      setIsAuthChecking(false) 
+    })
+    return () => unsubscribe()
+  }, [syncPostgresProfile])
+
+  if (isAuthChecking) {
+    return <div style={{ minHeight: '100vh', background: '#0d1421', display: 'flex', justifyContent: 'center', alignItems: 'center', color: '#fff' }}>Loading Session...</div>
+  } 
 
   return (
     <div style={{ minHeight: '100vh', background: '#f9feff' }}>
       <AnimatePresence mode="wait">
         {screen === 'login' && (
-          <Login
-            key="login"
-            onStart={(u) => {
-              setUser(u)
-              setScreen(hasDoneDiagnostic(u.email) ? 'dashboard' : 'intro')
-            }}
-          />
+          <Login key="login" onStart={(u) => { setUser(u); setScreen('dashboard'); }} />
         )}
         {screen === 'intro' && (
-          <DiagnosticIntro
-            key="intro"
-            onBegin={() => setScreen('quiz')}
-          />
+          <DiagnosticIntro key="intro" onBegin={() => setScreen('quiz')} />
         )}
         {screen === 'quiz' && (
-        <DiagnosticQuiz
+          <DiagnosticQuiz
             key="quiz"
-            // Tangkap 3 parameter terpisah hasil kiriman dari fungsi 'next' di kuis
             onComplete={(quizResult, telemetryRows, sessionId) => {
               setDiagnosticResults(quizResult)
               setSavedRawRecords(telemetryRows)
               setSavedSessionId(sessionId)
-              
               markDiagnosticDone(user.email)
               recordQuizResult(user.email, { score: scoreOf(quizResult), type: 'diagnostic' })
               setScreen('analyzing')
@@ -84,138 +164,93 @@ export default function App() {
             key="analyzing"
             sessionId={savedSessionId}
             rawTelemetryRecords={savedRawRecords}
-            onDone={async (mlResults) => { // <-- Diubah menjadi async
-              console.log("Rapor ML sukses didapatkan di App.jsx:", mlResults)
-              // 1. Simpan hasil AI ke state agar bisa dilempar ke Profil
+            onDone={async (mlResults) => {
               setAiProfileData(mlResults) 
-
-              // ─── PIPA DATA BARU: SIMPAN DIAGNOSTIC KE SQL ───
               try {
-                console.log("Menyimpan rekam jejak Diagnostic ke Database SQL...");
-                
-                // Hitung manual total soal dan jawaban benar
-                const totalQ = diagnosticResults?.questions ? diagnosticResults.questions.length : 15;
-                const correctAns = diagnosticResults?.answers ? diagnosticResults.answers.filter((a, i) => a === diagnosticResults.questions[i].answer).length : 0;
-                
-                const hfData = mlResults && mlResults.length > 0 ? mlResults[0] : null;
-
-                let aiConfidence = 0.85;
-                if (hfData && hfData.probability && hfData.prediction !== undefined) {
-                    aiConfidence = hfData.probability[hfData.prediction]; 
-                }
-
-                // Guardrail (Pagar Pengaman)
-                let finalPrediction = hfData?.prediction ?? 2;
-                if (correctAns === 0) {
-                    finalPrediction = 2; // Paksa ke Beginner
-                }
-
-                // Payload SQL. Kita gunakan topicIndex: 0 sebagai penanda Diagnostic (Tes Awal)
                 const sqlPayload = {
-                    topicIndex: 0, 
-                    score: scoreOf(diagnosticResults),
-                    totalQuestion: totalQ,
-                    correctAnswer: correctAns,
-                    difficulty: 1, 
-                    
-                    predictedLevel: finalPrediction, 
-                    confidence: aiConfidence,
-                    nextTopic: 1 // Setelah Diagnostic, rekomendasikan mulai belajar dari Topik 1
+                  isDiagnostic: true,
+                  questions: diagnosticResults?.questions || [],
+                  answers: diagnosticResults?.answers || [],
+                  hintsUsed: diagnosticResults?.hintsUsed || Array(36).fill(0),
+                  aiResults: mlResults 
                 };
-
                 await saveQuizToBackend(sqlPayload);
-                console.log("✅ Data Diagnostic & ML sukses mendarat di SQL Connect!");
-
+                await syncPostgresProfile(user.email);
+                setScreen('profile');
               } catch (error) {
-                console.error("🛑 Gagal menyimpan Diagnostic ke SQL:", error)
+                console.error("🛑 Gagal menyimpan:", error);
+                setScreen('profile');
               }
-              // ─── BATAS PIPA DATA DIAGNOSTIC ───
-
-              setScreen('profile')
             }}
           />
         )}
         {screen === 'profile' && (
-          <LearningProfile
-            key="profile"
-            results={diagnosticResults}
-            // 2. Lempar data AI ke dalam komponen LearningProfile
-            aiResults={aiProfileData} 
-            onContinue={() => setScreen('dashboard')}
-          />
+          <LearningProfile key="profile" results={diagnosticResults} aiResults={aiProfileData} onContinue={() => setScreen('dashboard')} />
         )}
         {screen === 'dashboard' && (
-        <Dashboard
+          <Dashboard
             key="dashboard"
             user={user}
-            results={diagnosticResults}
-            onStartQuiz={(topic) => { setPracticeTopic(topic); setScreen('practice') }}
-            onLogout={() => setScreen('login')}
-        />
+            cognitiveProfile={cognitiveProfile} 
+            quizHistory={quizHistory} 
+            hasDiagnostic={hasDiagnostic}
+            onTakeDiagnostic={() => setScreen('intro')} 
+            onStartQuiz={(topic) => { 
+              if (!topic) {
+                setIsSmartPractice(true);
+                setPracticeTopic(adaptiveFallbackTopic || TENSE_TOPICS[0]);
+              } else {
+                setIsSmartPractice(false);
+                setPracticeTopic(topic);
+              }
+              setScreen('practice');
+            }}
+            onLogout={() => {
+              auth.signOut()
+              setUser({ name: '', email: '' })
+              setCognitiveProfile(null)
+              setQuizHistory([])
+              setHasDiagnostic(false)
+            }}
+          />
         )}
         {screen === 'practice' && (
           <PracticeQuiz
             key={`practice-${practiceTopic ?? 'all'}`}
             topic={practiceTopic}
+            cognitiveProfile={cognitiveProfile}
+            isSmartMode={isSmartPractice}
             onComplete={async (r) => {
               setPracticeResults(r)
               recordQuizResult(user.email, { score: scoreOf(r), type: 'practice', topic: practiceTopic })
-              
               try {
                 const telemetryRows = r.telemetry 
-                let hfResponses = null; // Siapkan variabel penampung hasil ML
+                let hfResponses = null;
                 
                 if (telemetryRows && telemetryRows.length > 0) {
-                  console.log("Menjalankan preprocessing untuk data Practice...");
                   const mlPayloads = preprocessTelemetryForML(telemetryRows)
-                  
-                  console.log("Mengirim data Practice ke Hugging Face ...");
                   hfResponses = await sendToHuggingFace(mlPayloads)
-                  console.log("Respons Model ML untuk Practice Sukses:", hfResponses)
                 }
-
-                // ─── PIPA DATA BARU: SIMPAN KE DATABASE SQL ───
-                console.log("Menyimpan rekam jejak ke Database SQL...");
                 
-                // Hitung manual total soal dan jawaban benar
-                const totalQ = r.questions ? r.questions.length : 10;
+                const totalQ = r.questions ? r.questions.length : 5;
                 const correctAns = r.answers ? r.answers.filter((a, i) => a === r.questions[i].answer).length : 0;
                 
-                // 1. Buat pemetaan (kamus) Nama Topik ke Angka Index
                 const topicToIdMap = {
-                    "Simple Present Tense": 1,
-                    "Present Continuous Tense": 2,
-                    "Present Perfect Tense": 3,
-                    "Present Perfect Continuous Tense": 4,
-
-                    "Simple Past Tense": 5,
-                    "Past Continuous Tense": 6,
-                    "Past Perfect Tense": 7,
-                    "Past Perfect Continuous Tense": 8,
-
-                    "Simple Future Tense": 9,
-                    "Future Continuous Tense": 10,
-                    "Future Perfect Tense": 11,
-                    "Future Perfect Continuous Tense": 12
+                  "Simple Present Tense": 1, "Present Continuous Tense": 2, "Present Perfect Tense": 3, "Present Perfect Continuous Tense": 4,
+                  "Simple Past Tense": 5, "Past Continuous Tense": 6, "Past Perfect Tense": 7, "Past Perfect Continuous Tense": 8,
+                  "Simple Future Tense": 9, "Future Continuous Tense": 10, "Future Perfect Tense": 11, "Future Perfect Continuous Tense": 12
                 };
 
-                // 2. Terjemahkan string menjadi angka (fallback ke 1 jika tidak ditemukan)
                 const currentTopicId = topicToIdMap[practiceTopic] || 1;
-
-                // 3. Susun payload sesuai yang diminta backend
                 const hfData = hfResponses && hfResponses.length > 0 ? hfResponses[0] : null;
 
-                // Ekstrak confidence dari array probability
                 let aiConfidence = 0.85;
                 if (hfData && hfData.probability && hfData.prediction !== undefined) {
                     aiConfidence = hfData.probability[hfData.prediction]; 
                 }
 
-                // ─── GUARDRAIL (PAGAR PENGAMAN) ───
                 let finalPrediction = hfData?.prediction ?? 2;
-                if (correctAns === 0) {
-                    finalPrediction = 2; // Paksa ke level Beginner jika salah semua
-                }
+                if (correctAns === 0) finalPrediction = 2;
 
                 const sqlPayload = {
                     topicIndex: currentTopicId,
@@ -223,32 +258,23 @@ export default function App() {
                     totalQuestion: totalQ,
                     correctAnswer: correctAns,
                     difficulty: r.difficulty || 1,
-                    
                     predictedLevel: finalPrediction, 
                     confidence: aiConfidence,
                     nextTopic: currentTopicId + 1 
                 };
 
-                // Eksekusi fungsi pengirim
                 await saveQuizToBackend(sqlPayload);
-                console.log("✅ Data Practice & ML sukses mendarat di SQL Connect!");
-
+                await syncPostgresProfile(user.email);
               } catch (error) {
                 console.error("🛑 Gagal memproses pipeline kognitif Practice / SQL:", error)
               }
-              
-              // Setelah semua proses selesai, lempar user ke halaman kuis selesai
               setScreen('complete')
             }}
             onExit={() => setScreen('dashboard')}
-        />
+          />
         )}
         {screen === 'complete' && (
-          <QuizComplete
-            key="complete"
-            results={practiceResults}
-            onBack={() => setScreen('dashboard')}
-          />
+          <QuizComplete key="complete" results={practiceResults} onBack={() => setScreen('dashboard')} />
         )}
       </AnimatePresence>
     </div>

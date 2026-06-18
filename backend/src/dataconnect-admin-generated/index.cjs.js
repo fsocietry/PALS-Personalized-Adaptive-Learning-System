@@ -2,7 +2,7 @@ const { validateAdminArgs } = require('firebase-admin/data-connect');
 
 const connectorConfig = {
   connector: 'example',
-  serviceId: 'pals-c0dc6-2-service',
+  serviceId: 'pals-c0dc6-4-service',
   location: 'asia-southeast1'
 };
 exports.connectorConfig = connectorConfig;
@@ -14,20 +14,6 @@ function upsertUser(dcOrVarsOrOptions, varsOrOptions, options) {
 }
 exports.upsertUser = upsertUser;
 
-function insertTopicLabel(dcOrVarsOrOptions, varsOrOptions, options) {
-  const { dc: dcInstance, vars: inputVars, options: inputOpts} = validateAdminArgs(connectorConfig, dcOrVarsOrOptions, varsOrOptions, options, true, true);
-  dcInstance.useGen(true);
-  return dcInstance.executeMutation('InsertTopicLabel', inputVars, inputOpts);
-}
-exports.insertTopicLabel = insertTopicLabel;
-
-function insertQuestion(dcOrVarsOrOptions, varsOrOptions, options) {
-  const { dc: dcInstance, vars: inputVars, options: inputOpts} = validateAdminArgs(connectorConfig, dcOrVarsOrOptions, varsOrOptions, options, true, true);
-  dcInstance.useGen(true);
-  return dcInstance.executeMutation('InsertQuestion', inputVars, inputOpts);
-}
-exports.insertQuestion = insertQuestion;
-
 function insertQuizAttempt(dcOrVarsOrOptions, varsOrOptions, options) {
   const { dc: dcInstance, vars: inputVars, options: inputOpts} = validateAdminArgs(connectorConfig, dcOrVarsOrOptions, varsOrOptions, options, true, true);
   dcInstance.useGen(true);
@@ -35,24 +21,38 @@ function insertQuizAttempt(dcOrVarsOrOptions, varsOrOptions, options) {
 }
 exports.insertQuizAttempt = insertQuizAttempt;
 
-function insertPrediction(dcOrVarsOrOptions, varsOrOptions, options) {
+function upsertPrediction(dcOrVarsOrOptions, varsOrOptions, options) {
   const { dc: dcInstance, vars: inputVars, options: inputOpts} = validateAdminArgs(connectorConfig, dcOrVarsOrOptions, varsOrOptions, options, true, true);
   dcInstance.useGen(true);
-  return dcInstance.executeMutation('InsertPrediction', inputVars, inputOpts);
+  return dcInstance.executeMutation('UpsertPrediction', inputVars, inputOpts);
 }
-exports.insertPrediction = insertPrediction;
+exports.upsertPrediction = upsertPrediction;
 
-function insertLearningPath(dcOrVarsOrOptions, varsOrOptions, options) {
+function upsertLearningPath(dcOrVarsOrOptions, varsOrOptions, options) {
   const { dc: dcInstance, vars: inputVars, options: inputOpts} = validateAdminArgs(connectorConfig, dcOrVarsOrOptions, varsOrOptions, options, true, true);
   dcInstance.useGen(true);
-  return dcInstance.executeMutation('InsertLearningPath', inputVars, inputOpts);
+  return dcInstance.executeMutation('UpsertLearningPath', inputVars, inputOpts);
 }
-exports.insertLearningPath = insertLearningPath;
+exports.upsertLearningPath = upsertLearningPath;
 
-function insertTopicProfile(dcOrVarsOrOptions, varsOrOptions, options) {
+function upsertTopicProfile(dcOrVarsOrOptions, varsOrOptions, options) {
   const { dc: dcInstance, vars: inputVars, options: inputOpts} = validateAdminArgs(connectorConfig, dcOrVarsOrOptions, varsOrOptions, options, true, true);
   dcInstance.useGen(true);
-  return dcInstance.executeMutation('InsertTopicProfile', inputVars, inputOpts);
+  return dcInstance.executeMutation('UpsertTopicProfile', inputVars, inputOpts);
 }
-exports.insertTopicProfile = insertTopicProfile;
+exports.upsertTopicProfile = upsertTopicProfile;
+
+function getUserProfile(dcOrVarsOrOptions, varsOrOptions, options) {
+  const { dc: dcInstance, vars: inputVars, options: inputOpts} = validateAdminArgs(connectorConfig, dcOrVarsOrOptions, varsOrOptions, options, true, true);
+  dcInstance.useGen(true);
+  return dcInstance.executeQuery('GetUserProfile', inputVars, inputOpts);
+}
+exports.getUserProfile = getUserProfile;
+
+function getQuizAttempts(dcOrVarsOrOptions, varsOrOptions, options) {
+  const { dc: dcInstance, vars: inputVars, options: inputOpts} = validateAdminArgs(connectorConfig, dcOrVarsOrOptions, varsOrOptions, options, true, true);
+  dcInstance.useGen(true);
+  return dcInstance.executeQuery('GetQuizAttempts', inputVars, inputOpts);
+}
+exports.getQuizAttempts = getQuizAttempts;
 

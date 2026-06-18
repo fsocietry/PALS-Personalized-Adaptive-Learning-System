@@ -1,11 +1,11 @@
 specVersion: "v1"
-serviceId: "pals-c0dc6-2-service"
+serviceId: "pals-c0dc6-4-service"
 location: "asia-southeast1"
 schemas:
   - source: "./schema"
     datasource:
       postgresql:
-        database: "pals-c0dc6-2-database"
+        database: "pals-c0dc6-4-database"
         cloudSql:
           instanceId: "pals-c0dc6-instance"
           # schemaValidation: "STRICT"     # STRICT mode makes Postgres schema match Data Connect exactly.

@@ -1,4 +1,4 @@
-# --- MUTASI USER (LOGIN) ---
+# 🎯 1. MUTASI USER (Untuk Login & Sinkronisasi Sesi Awal)
 mutation UpsertUser($id: String!, $email: String!, $name: String!, $createdAt: Timestamp!) @auth(level: NO_ACCESS) {
   user_upsert(
     data: {
@@ -10,34 +10,10 @@ mutation UpsertUser($id: String!, $email: String!, $name: String!, $createdAt: T
   )
 }
 
-# --- MUTASI UNTUK TABEL STATIS (MASTER DATA) ---
-mutation InsertTopicLabel($topicIndex: Int!, $topicName: String!, $description: String) @auth(level: NO_ACCESS) {
-  topicLabel_insert(data: {
-    topicIndex: $topicIndex
-    topicName: $topicName
-    description: $description
-  })
-}
-
-mutation InsertQuestion($topicIndex: Int!, $question: String!, $optionA: String!, $optionB: String!, $optionC: String!, $optionD: String!, $correctAnswer: String!, $difficulty: Int!, $explanation: String, $createdAt: Timestamp!) @auth(level: NO_ACCESS) {
-  question_insert(data: {
-    topicIndex: $topicIndex
-    question: $question
-    optionA: $optionA
-    optionB: $optionB
-    optionC: $optionC
-    optionD: $optionD
-    correctAnswer: $correctAnswer
-    difficulty: $difficulty
-    explanation: $explanation
-    createdAt: $createdAt
-  })
-}
-
-# --- MUTASI UNTUK TABEL DINAMIS (HASIL KUIS & AI) ---
+# 📝 2. MUTASI LOG RIWAYAT KUIS (Tetap Pakai Insert karena Mencatat Setiap Sesi Selesai)
 mutation InsertQuizAttempt($userId: String!, $topicIndex: Int!, $score: Float!, $totalQuestion: Int!, $correctAnswer: Int!, $difficulty: Int!, $createdAt: Timestamp!) @auth(level: NO_ACCESS) {
   quizAttempt_insert(data: {
-    userId: $userId
+    user: { id: $userId }
     topicIndex: $topicIndex
     score: $score
     totalQuestion: $totalQuestion
@@ -47,9 +23,10 @@ mutation InsertQuizAttempt($userId: String!, $topicIndex: Int!, $score: Float!, 
   })
 }
 
-mutation InsertPrediction($userId: String!, $topicIndex: Int!, $predictedLevel: Int!, $confidence: Float!, $updatedAt: Timestamp!) @auth(level: NO_ACCESS) {
-  prediction_insert(data: {
-    userId: $userId
+# 🧠 3. MUTASI PREDIKSI ML AI (Menggunakan Upsert Agar Unik 1-to-1 Per Topik User)
+mutation UpsertPrediction($userId: String!, $topicIndex: Int!, $predictedLevel: Int!, $confidence: Float!, $updatedAt: Timestamp!) @auth(level: NO_ACCESS) {
+  prediction_upsert(data: {  
+    user: { id: $userId }
     topicIndex: $topicIndex
     predictedLevel: $predictedLevel
     confidence: $confidence
@@ -57,9 +34,10 @@ mutation InsertPrediction($userId: String!, $topicIndex: Int!, $predictedLevel: 
   })
 }
 
-mutation InsertLearningPath($userId: String!, $currentTopic: Int!, $recommendedDifficulty: Int!, $nextTopic: Int!, $updatedAt: Timestamp!) @auth(level: NO_ACCESS) {
-  learningPath_insert(data: {
-    userId: $userId
+# 🛣️ 4. MUTASI JALUR BELAJAR ADAPTIF (Menggunakan Upsert Agar Unik 1-to-1 Per User)
+mutation UpsertLearningPath($userId: String!, $currentTopic: Int!, $recommendedDifficulty: Int!, $nextTopic: Int!, $updatedAt: Timestamp!) @auth(level: NO_ACCESS) {
+  learningPath_upsert(data: {  
+    user: { id: $userId }
     currentTopic: $currentTopic
     recommendedDifficulty: $recommendedDifficulty
     nextTopic: $nextTopic
@@ -67,15 +45,16 @@ mutation InsertLearningPath($userId: String!, $currentTopic: Int!, $recommendedD
   })
 }
 
-mutation InsertTopicProfile(
+# 📊 5. MUTASI PROFIL KOGNITIF TENSES (Menggunakan Upsert Agar Meng-update Row yang Sama)
+mutation UpsertTopicProfile(
   $userId: String!,
   $topic1: Int!, $topic2: Int!, $topic3: Int!, $topic4: Int!,
   $topic5: Int!, $topic6: Int!, $topic7: Int!, $topic8: Int!,
   $topic9: Int!, $topic10: Int!, $topic11: Int!, $topic12: Int!,
   $updatedAt: Timestamp!
 ) @auth(level: NO_ACCESS) {
-  topicProfile_insert(data: {
-    userId: $userId
+  topicProfile_upsert(data: {  
+    user: { id: $userId }      
     topic1: $topic1
     topic2: $topic2
     topic3: $topic3
@@ -90,4 +69,34 @@ mutation InsertTopicProfile(
     topic12: $topic12
     updatedAt: $updatedAt
   })
+}
+
+query GetUserProfile($userId: String!) @auth(level: NO_ACCESS) {
+  topicProfile(key: { userId: $userId }) { 
+    topic1
+    topic2
+    topic3
+    topic4
+    topic5
+    topic6
+    topic7
+    topic8
+    topic9
+    topic10
+    topic11
+    topic12
+    updatedAt
+  }
+}
+
+query GetQuizAttempts($userId: String!) @auth(level: NO_ACCESS) {
+  quizAttempts(where: { userId: { eq: $userId } }) {
+    id
+    topicIndex
+    score
+    totalQuestion
+    correctAnswer
+    difficulty
+    createdAt
+  }
 }

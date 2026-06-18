@@ -1,28 +1,23 @@
-// Import fungsi upsertUser dari SDK yang baru saja di-generate
+// Import fungsi upsertUser dari SDK yang di-generate
 const { upsertUser } = require("../src/dataconnect-admin-generated");
 
 exports.login = async (req, res) => {
   try {
-    // req.user didapat dari authMiddleware.js setelah token Firebase divalidasi
-    // Kita ekstrak uid (sebagai id), email, dan name
     const { uid, email, name } = req.user;
 
-    // Menjalankan mutasi ke Firebase Data Connect (SQL)
+    console.log("Menjalankan mutasi upsertUser ke SQL...");
+
     await upsertUser({
       id: uid,
       email: email,
-      name: name || "PALS Student", // Fallback jika nama kosong
-      createdAt: new Date().toISOString()
+      name: name || "PALS Student", 
+      createdAt: new Date() // ✅ FIX: Ganti jadi objek Date murni agar lolos validasi Timestamp!
     });
 
     res.status(200).json({
       success: true,
       message: "Login berhasil dan data tersinkronisasi dengan SQL",
-      user: {
-        id: uid,
-        email: email,
-        name: name
-      },
+      user: { id: uid, email, name },
     });
   } catch (error) {
     console.error("🛑 Gagal menyimpan ke DB SQL:", error);

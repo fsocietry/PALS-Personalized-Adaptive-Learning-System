@@ -1,91 +1,53 @@
-type User @table {
-id: String!
-email: String!
-name: String!
-createdAt: Timestamp!
+type User @table(key: "id") {
+  id: String!
+  email: String!
+  name: String!
+  createdAt: Timestamp!
 }
 
-type TopicProfile @table {
-user: User!
-
-topic1: Int!
-topic2: Int!
-topic3: Int!
-topic4: Int!
-topic5: Int!
-topic6: Int!
-topic7: Int!
-topic8: Int!
-topic9: Int!
-topic10: Int!
-topic11: Int!
-topic12: Int!
-
-updatedAt: Timestamp!
+# ✅ FIX 1: Satu user hanya boleh memiliki SATU profil tenses secara total
+type TopicProfile @table(key: ["user"]) {
+  user: User!
+  topic1: Int!
+  topic2: Int!
+  topic3: Int!
+  topic4: Int!
+  topic5: Int!
+  topic6: Int!
+  topic7: Int!
+  topic8: Int!
+  topic9: Int!
+  topic10: Int!
+  topic11: Int!
+  topic12: Int!
+  updatedAt: Timestamp!
 }
 
-type Question @table {
-topicIndex: Int!
-
-question: String!
-
-optionA: String!
-optionB: String!
-optionC: String!
-optionD: String!
-
-correctAnswer: String!
-
-difficulty: Int!
-
-explanation: String
-
-createdAt: Timestamp!
+# ✅ FIX 2: Satu user hanya boleh memiliki SATU prediksi per satu kategori topik tenses
+type Prediction @table(key: ["user", "topicIndex"]) {
+  user: User!
+  topicIndex: Int!
+  predictedLevel: Int!
+  confidence: Float!
+  updatedAt: Timestamp!
 }
 
+# ✅ FIX 3: Satu user hanya boleh memiliki SATU jalur rekomendasi belajar aktif
+type LearningPath @table(key: ["user"]) {
+  user: User!
+  currentTopic: Int!
+  recommendedDifficulty: Int!
+  nextTopic: Int!
+  updatedAt: Timestamp!
+}
+
+# (Tabel QuizAttempt biarkan tanpa direktif key agar tetap mencatat log baris baru tiap sesi)
 type QuizAttempt @table {
-user: User!
-
-topicIndex: Int!
-
-score: Float!
-
-totalQuestion: Int!
-correctAnswer: Int!
-
-difficulty: Int!
-
-createdAt: Timestamp!
-}
-
-type Prediction @table {
-user: User!
-
-topicIndex: Int!
-
-predictedLevel: Int!
-
-confidence: Float!
-
-updatedAt: Timestamp!
-}
-
-type LearningPath @table {
-user: User!
-
-currentTopic: Int!
-
-recommendedDifficulty: Int!
-
-nextTopic: Int!
-
-updatedAt: Timestamp!
-}
-
-type TopicLabel @table {
-topicIndex: Int!
-
-topicName: String!
-
-description: String
+  user: User!
+  topicIndex: Int!
+  score: Float!
+  totalQuestion: Int!
+  correctAnswer: Int!
+  difficulty: Int!
+  createdAt: Timestamp!
 }

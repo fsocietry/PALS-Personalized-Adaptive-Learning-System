@@ -51,7 +51,7 @@ export default function DiagnosticIntro({ onBegin }) {
             boxShadow: '0 32px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.07)',
           }}>
 
-          {/* Brain with orbiting dot */}
+          {/* Core Brand Identity */}
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 28 }}>
             <div style={{ position: 'relative', width: 96, height: 96 }}>
               <div style={{
@@ -74,7 +74,7 @@ export default function DiagnosticIntro({ onBegin }) {
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   boxShadow: '0 8px 28px rgba(43,89,143,0.5)',
                 }}>
-                <img src={iconPng} alt="PALS" style={{ width: 54, height: 54, objectFit: 'contain' }} />
+                <img src={iconPng} alt="PALS Logo" style={{ width: 54, height: 54, objectFit: 'contain' }} />
               </motion.div>
             </div>
           </div>
@@ -91,26 +91,27 @@ export default function DiagnosticIntro({ onBegin }) {
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.28 }}
             style={{ color: '#71bfeb', fontWeight: 600, fontSize: '0.9rem',
               textAlign: 'center', marginBottom: 8 }}>
-            Let's understand your learning style
+            Adaptive Proficiency Calibration
           </motion.p>
 
+          {/* ✅ REVISI: Narasi dibersihkan dari Postgres & Hugging face */}
           <motion.p
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.34 }}
             style={{ color: 'rgba(178,208,238,0.65)', fontSize: '0.86rem', textAlign: 'center',
-              lineHeight: 1.75, margin: '0 auto 28px', maxWidth: 400 }}>
-            This initial assessment helps us create a personalized learning path tailored specifically for you.
+              lineHeight: 1.75, margin: '0 auto 28px', maxWidth: 440 }}>
+            This initial evaluation captures your core learning metrics to accurately map your initial comprehension level and customize your adaptive practice framework.
           </motion.p>
 
-          {/* Info grid */}
+          {/* ✅ REVISI: Metrik diubah ke istilah EdTech baku */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 20 }}>
             {[
               {
-                icon: <Target size={15} color="#71bfeb" />, title: 'What We Measure',
-                items: ['Your current English proficiency','Learning pace and style','Strengths and growth areas','Question-solving behavior','How you use hints and learning aids'],
+                icon: <Target size={15} color="#71bfeb" />, title: 'Monitored Metrics',
+                items: ['Response accuracy rate','Learning aid & hint dependency','Grammatical error patterns','Concept comprehension depth','Tense-group competency'],
               },
               {
-                icon: <TrendingUp size={15} color="#71bfeb" />, title: 'What You Get',
-                items: ['Personalized learning path','Custom quiz recommendations','Adaptive difficulty levels','Targeted skill development'],
+                icon: <TrendingUp size={15} color="#71bfeb" />, title: 'Adaptive Engine',
+                items: ['Personalized study plan','Dynamic question scaling','Real-time profile grouping','Focused skill reinforcement'],
               },
             ].map((card, i) => (
               <motion.div key={card.title}
@@ -135,7 +136,7 @@ export default function DiagnosticIntro({ onBegin }) {
             ))}
           </div>
 
-          {/* Important Notes */}
+          {/* Session Constraints */}
           <motion.div
             initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.62 }}
@@ -146,14 +147,14 @@ export default function DiagnosticIntro({ onBegin }) {
             }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 10 }}>
               <Info size={14} color="#f5c842" />
-              <span style={{ fontWeight: 700, fontSize: '0.81rem', color: '#f5c842' }}>Important Notes</span>
+              <span style={{ fontWeight: 700, fontSize: '0.81rem', color: '#f5c842' }}>Session Guidelines</span>
             </div>
             {[
-              "Take your time - there's no time limit",
-              'Answer honestly for best results',
-              '36 questions covering all 12 tenses (easy, medium & hard)',
-              'Each question has 3 hints available if needed',
-              'We track hint usage to understand your learning style',
+              'Untimed assessment — focus entirely on grammatical precision',
+              'Please answer honestly to ensure optimal recommendation accuracy',
+              '36 assessment nodes evaluating all 12 English tenses',
+              '3 supportive contextual hints available per question node',
+              'Hint usage patterns will assist in formulating your personalized path',
             ].map(note => (
               <div key={note} style={{ display: 'flex', gap: 7, marginBottom: 5, alignItems: 'flex-start' }}>
                 <div style={{ width: 3, height: 3, borderRadius: '50%', background: '#f5c842', marginTop: 8, flexShrink: 0 }} />
@@ -169,7 +170,6 @@ export default function DiagnosticIntro({ onBegin }) {
             whileHover={{ scale: 1.02, boxShadow: '0 14px 40px rgba(90,171,222,0.4)' }}
             whileTap={{ scale: 0.98 }}
             onClick={onBegin}
-            className="shimmer-btn"
             style={{
               width: '100%', padding: '16px', borderRadius: 12, border: 'none', cursor: 'pointer',
               background: 'linear-gradient(135deg, #2b598f, #4a9acc)',
@@ -178,7 +178,7 @@ export default function DiagnosticIntro({ onBegin }) {
               boxShadow: '0 8px 28px rgba(43,89,143,0.45)',
               position: 'relative', overflow: 'hidden',
             }}>
-            Begin Assessment <ChevronRight size={18} />
+            Initialize Evaluation <ChevronRight size={18} />
           </motion.button>
         </motion.div>
       </div>

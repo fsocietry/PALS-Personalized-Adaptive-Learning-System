@@ -1,11 +1,12 @@
-const express = require("express");
+const express = require('express');
 const router = express.Router();
+const quizController = require('../controllers/quizController');
+const authMiddleware = require('../middleware/authMiddleware');
 
-// Import middleware auth agar hanya user yang login yang bisa kirim nilai
-const verifyToken = require("../middleware/authMiddleware");
-const quizController = require("../controllers/quizController");
+// 📝 Rute untuk simpan kuis
+router.post('/submit', authMiddleware, quizController.submitQuiz);
 
-// Endpoint untuk menerima submit kuis: POST /api/quiz/submit
-router.post("/submit", verifyToken, quizController.submitQuiz);
+// 📜 FIX: Tambahkan baris ini agar rute history kuis lo aktif!
+router.get('/history', authMiddleware, quizController.getQuizHistory); 
 
 module.exports = router;
