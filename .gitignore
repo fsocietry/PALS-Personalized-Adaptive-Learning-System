@@ -1,2 +1,12 @@
 # Firebase / Google Cloud credentials
 serviceAccountKey.json
+
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Environment
+.env
+.env.local

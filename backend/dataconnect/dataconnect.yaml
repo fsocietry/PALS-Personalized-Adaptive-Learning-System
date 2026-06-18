@@ -1,0 +1,13 @@
+specVersion: "v1"
+serviceId: "pals-c0dc6-2-service"
+location: "asia-southeast1"
+schemas:
+  - source: "./schema"
+    datasource:
+      postgresql:
+        database: "pals-c0dc6-2-database"
+        cloudSql:
+          instanceId: "pals-c0dc6-instance"
+          # schemaValidation: "STRICT"     # STRICT mode makes Postgres schema match Data Connect exactly.
+          # schemaValidation: "COMPATIBLE" # COMPATIBLE mode makes Postgres schema compatible with Data Connect.
+connectorDirs: ["./example"]

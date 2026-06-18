@@ -1,22 +1,73 @@
-import { useEffect } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { motion } from 'framer-motion'
-import { CircleCheckBig } from 'lucide-react'
+import { CircleCheckBig, Loader2 } from 'lucide-react'
 import iconPng from '../assets/icon.png'
+import { preprocessTelemetryForML, sendToHuggingFace, sendToGoogleDrive } from '../lib/api'
 
 const STEPS = [
-  'Evaluating accuracy and performance',
-  'Identifying your learning style',
-  'Building personalized recommendations',
+  'Processing your behavioral patterns',
+  'Analyzing learning strategies',
+  'Generating cognitive profile',
 ]
 
 const R    = 54
 const CIRC = 2 * Math.PI * R
 
-export default function Analyzing({ onDone }) {
+export default function Analyzing({ sessionId, rawTelemetryRecords, onDone }) {
+  const [currentStepIndex, setCurrentStepIndex] = useState(0)
+  const [errorMessage, setErrorMessage] = useState(null)
+  const hasTriggered = useRef(false)
+
+  // Efek dekoratif untuk transisi langkah pengerjaan di layar
   useEffect(() => {
-    const t = setTimeout(onDone, 3800)
-    return () => clearTimeout(t)
-  }, [onDone])
+    const interval = setInterval(() => {
+      setCurrentStepIndex((prev) => (prev < STEPS.length - 1 ? prev + 1 : prev))
+    }, 1200)
+    return () => clearInterval(interval)
+  }, [])
+
+  // ENGINE PIPELINE POST PARALEL
+  useEffect(() => {
+    if (hasTriggered.current) return
+    hasTriggered.current = true
+
+    async function runDataPipeline() {
+      if (!rawTelemetryRecords || rawTelemetryRecords.length === 0) {
+        onDone([])
+        return
+      }
+
+      try {
+        // 1. Preprocessing lokal di browser client
+        const mlPayloads = preprocessTelemetryForML(rawTelemetryRecords)
+
+        // 2. Eksekusi POST Request secara paralel ke Hugging Face dan Google Drive Webhook
+        const [driveResponse, hfResponses] = await Promise.all([
+          sendToGoogleDrive(sessionId, rawTelemetryRecords),
+          sendToHuggingFace(mlPayloads)
+        ])
+
+        console.log("💾 Google Drive Sheets Backup Status:", driveResponse)
+        console.log("🧠 Hugging Face Inference Results:", hfResponses)
+
+        // 3. Berhasil! Beri delay sedikit agar transisi mulus, lalu panggil callback onDone
+        setTimeout(() => {
+          onDone(hfResponses)
+        }, 500)
+
+      } catch (error) {
+        console.error("🛑 Terjadi gangguan pada pipeline integrasi:", error)
+        setErrorMessage("Connection issue detected. Retrying layout...")
+        
+        // Fallback jika server down/sleep agar web production tidak freeze selamanya
+        setTimeout(() => {
+          onDone([])
+        }, 3000)
+      }
+    }
+
+    runDataPipeline()
+  }, [rawTelemetryRecords, sessionId, onDone])
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -27,7 +78,7 @@ export default function Analyzing({ onDone }) {
         padding: 24, position: 'relative', overflow: 'hidden',
       }}>
 
-      {/* Blobs */}
+      {/* Blobs Background */}
       {[
         { size: 400, left: '-12%', top: '-18%', color: '#1e4080', delay: 0 },
         { size: 280, left: '70%',  top: '58%',  color: '#0d3060', delay: 2 },
@@ -79,7 +130,7 @@ export default function Analyzing({ onDone }) {
             boxShadow: '0 32px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.07)',
           }}>
 
-          {/* SVG Progress Ring + Brain */}
+          {/* SVG Progress Ring */}
           <motion.div
             initial={{ scale: 0 }} animate={{ scale: 1 }}
             transition={{ type: 'spring', stiffness: 160, damping: 14, delay: 0.1 }}
@@ -92,10 +143,12 @@ export default function Analyzing({ onDone }) {
                 <motion.circle cx="62" cy="62" r={R} fill="none"
                   stroke="url(#analyzeGrad)" strokeWidth="5" strokeLinecap="round"
                   strokeDasharray={CIRC}
-                  initial={{ strokeDashoffset: CIRC }}
-                  animate={{ strokeDashoffset: 0 }}
-                  transition={{ duration: 3.5, ease: 'easeInOut', delay: 0.3 }}
-                  transform="rotate(-90 62 62)"
+                  animate={{ 
+                    strokeDashoffset: [CIRC, CIRC * 0.2, 0],
+                    rotate: [0, 180, 360]
+                  }}
+                  transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
+                  style={{ transformOrigin: '62px 62px' }}
                 />
                 <defs>
                   <linearGradient id="analyzeGrad" x1="0" y1="0" x2="1" y2="1">
@@ -112,7 +165,7 @@ export default function Analyzing({ onDone }) {
               }}>
                 <motion.div
                   animate={{ scale: [1, 1.08, 1] }}
-                  transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}>
+                  transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}>
                   <img src={iconPng} alt="PALS" style={{ width: 54, height: 54, objectFit: 'contain' }} />
                 </motion.div>
               </div>
@@ -124,38 +177,53 @@ export default function Analyzing({ onDone }) {
             transition={{ delay: 0.22 }}
             style={{ fontSize: '1.85rem', fontWeight: 800, color: '#fff',
               margin: '0 0 12px', letterSpacing: '-0.5px' }}>
-            Analyzing Your Results
+            {errorMessage ? "Pipeline Warning" : "Analyzing Your Results"}
           </motion.h2>
 
           <motion.p
             initial={{ opacity: 0 }} animate={{ opacity: 1 }}
             transition={{ delay: 0.32 }}
             style={{
-              color: 'rgba(178,208,238,0.7)', fontSize: '0.9rem', lineHeight: 1.75,
+              color: errorMessage ? '#ef4444' : 'rgba(178,208,238,0.7)', fontSize: '0.9rem', lineHeight: 1.75,
               margin: '0 auto 32px', maxWidth: 360,
             }}>
-            We're processing your answers and learning patterns to create your personalized learning profile...
+            {errorMessage ? errorMessage : "We're processing your answers and learning patterns to create your personalized learning profile..."}
           </motion.p>
 
+          {/* LIST GENERAL STEPS */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {STEPS.map((s, i) => (
-              <motion.div key={s}
-                initial={{ opacity: 0, x: -24 }} animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.55 + i * 0.48, type: 'spring', stiffness: 120, damping: 18 }}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 12,
-                  padding: '14px 18px', borderRadius: 12, textAlign: 'left',
-                  background: 'rgba(255,255,255,0.05)',
-                  border: '1px solid rgba(113,191,235,0.15)',
-                }}>
-                <motion.div
-                  initial={{ scale: 0, rotate: -90 }} animate={{ scale: 1, rotate: 0 }}
-                  transition={{ delay: 0.72 + i * 0.48, type: 'spring', stiffness: 280, damping: 14 }}>
-                  <CircleCheckBig size={20} color="#7a9e6e" />
+            {STEPS.map((s, i) => {
+              const isDone = i < currentStepIndex;
+              const isActive = i === currentStepIndex;
+              
+              return (
+                <motion.div key={s}
+                  initial={{ opacity: 0, x: -24 }} animate={{ opacity: 1, x: 0 }}
+                  transition={{ type: 'spring', stiffness: 120, damping: 18 }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 12,
+                    padding: '14px 18px', borderRadius: 12, textAlign: 'left',
+                    background: isDone ? 'rgba(122,158,110,0.08)' : (isActive ? 'rgba(113,191,235,0.08)' : 'rgba(255,255,255,0.03)'),
+                    border: isActive ? '1px solid rgba(113,191,235,0.4)' : '1px solid rgba(255,255,255,0.08)',
+                    opacity: isDone || isActive ? 1 : 0.35
+                  }}>
+                  <div>
+                    {isDone ? (
+                      <CircleCheckBig size={20} color="#7a9e6e" />
+                    ) : isActive ? (
+                      <Loader2 size={20} color="#71bfeb" className="animate-spin" />
+                    ) : (
+                      <div style={{ width: 20, height: 20, borderRadius: '50%', border: '2px solid rgba(255,255,255,0.2)' }} />
+                    )}
+                  </div>
+                  <span style={{ 
+                    color: isActive ? '#fff' : 'rgba(255,255,255,0.75)', 
+                    fontSize: '0.9rem', 
+                    fontWeight: isActive ? 600 : 500 
+                  }}>{s}</span>
                 </motion.div>
-                <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: '0.9rem', fontWeight: 500 }}>{s}</span>
-              </motion.div>
-            ))}
+              )
+            })}
           </div>
         </motion.div>
       </div>

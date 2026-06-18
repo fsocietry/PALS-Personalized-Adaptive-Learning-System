@@ -1,0 +1,93 @@
+# --- MUTASI USER (LOGIN) ---
+mutation UpsertUser($id: String!, $email: String!, $name: String!, $createdAt: Timestamp!) @auth(level: NO_ACCESS) {
+  user_upsert(
+    data: {
+      id: $id          
+      email: $email
+      name: $name
+      createdAt: $createdAt
+    }
+  )
+}
+
+# --- MUTASI UNTUK TABEL STATIS (MASTER DATA) ---
+mutation InsertTopicLabel($topicIndex: Int!, $topicName: String!, $description: String) @auth(level: NO_ACCESS) {
+  topicLabel_insert(data: {
+    topicIndex: $topicIndex
+    topicName: $topicName
+    description: $description
+  })
+}
+
+mutation InsertQuestion($topicIndex: Int!, $question: String!, $optionA: String!, $optionB: String!, $optionC: String!, $optionD: String!, $correctAnswer: String!, $difficulty: Int!, $explanation: String, $createdAt: Timestamp!) @auth(level: NO_ACCESS) {
+  question_insert(data: {
+    topicIndex: $topicIndex
+    question: $question
+    optionA: $optionA
+    optionB: $optionB
+    optionC: $optionC
+    optionD: $optionD
+    correctAnswer: $correctAnswer
+    difficulty: $difficulty
+    explanation: $explanation
+    createdAt: $createdAt
+  })
+}
+
+# --- MUTASI UNTUK TABEL DINAMIS (HASIL KUIS & AI) ---
+mutation InsertQuizAttempt($userId: String!, $topicIndex: Int!, $score: Float!, $totalQuestion: Int!, $correctAnswer: Int!, $difficulty: Int!, $createdAt: Timestamp!) @auth(level: NO_ACCESS) {
+  quizAttempt_insert(data: {
+    userId: $userId
+    topicIndex: $topicIndex
+    score: $score
+    totalQuestion: $totalQuestion
+    correctAnswer: $correctAnswer
+    difficulty: $difficulty
+    createdAt: $createdAt
+  })
+}
+
+mutation InsertPrediction($userId: String!, $topicIndex: Int!, $predictedLevel: Int!, $confidence: Float!, $updatedAt: Timestamp!) @auth(level: NO_ACCESS) {
+  prediction_insert(data: {
+    userId: $userId
+    topicIndex: $topicIndex
+    predictedLevel: $predictedLevel
+    confidence: $confidence
+    updatedAt: $updatedAt
+  })
+}
+
+mutation InsertLearningPath($userId: String!, $currentTopic: Int!, $recommendedDifficulty: Int!, $nextTopic: Int!, $updatedAt: Timestamp!) @auth(level: NO_ACCESS) {
+  learningPath_insert(data: {
+    userId: $userId
+    currentTopic: $currentTopic
+    recommendedDifficulty: $recommendedDifficulty
+    nextTopic: $nextTopic
+    updatedAt: $updatedAt
+  })
+}
+
+mutation InsertTopicProfile(
+  $userId: String!,
+  $topic1: Int!, $topic2: Int!, $topic3: Int!, $topic4: Int!,
+  $topic5: Int!, $topic6: Int!, $topic7: Int!, $topic8: Int!,
+  $topic9: Int!, $topic10: Int!, $topic11: Int!, $topic12: Int!,
+  $updatedAt: Timestamp!
+) @auth(level: NO_ACCESS) {
+  topicProfile_insert(data: {
+    userId: $userId
+    topic1: $topic1
+    topic2: $topic2
+    topic3: $topic3
+    topic4: $topic4
+    topic5: $topic5
+    topic6: $topic6
+    topic7: $topic7
+    topic8: $topic8
+    topic9: $topic9
+    topic10: $topic10
+    topic11: $topic11
+    topic12: $topic12
+    updatedAt: $updatedAt
+  })
+}

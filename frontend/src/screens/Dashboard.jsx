@@ -1,19 +1,26 @@
+import { useMemo } from 'react'
 import { motion } from 'framer-motion'
-import { User, LogOut, Award, Clock, TrendingUp, ChevronRight } from 'lucide-react'
+import { User, LogOut, Award, Clock, TrendingUp, ChevronRight, History, Rocket } from 'lucide-react'
 import { useCountUp } from '../hooks/useCountUp'
+import { questionsByTense } from '../data/questions'
+import { loadQuizHistory, computeStats } from '../lib/stats'
 
-const CATS = [
-  { emoji: '📝', name: 'Grammar',              sub: '10 questions · Intermediate' },
-  { emoji: '📚', name: 'Vocabulary',            sub: '8 questions · Advanced'     },
-  { emoji: '📖', name: 'Reading Comprehension', sub: '5 questions · Beginner'     },
-  { emoji: '💬', name: 'Idioms & Phrases',      sub: '7 questions · Advanced'     },
-]
+// Icon + colour per tense family (present / past / future).
+const FAMILY = {
+  Present: { Icon: Clock,   color: '#7a9e6e' },
+  Past:    { Icon: History, color: '#f5c842' },
+  Future:  { Icon: Rocket,  color: '#5aabde' },
+}
+const familyOf = (topic) =>
+  topic.startsWith('Simple Present') || topic.startsWith('Present') ? 'Present'
+  : topic.startsWith('Simple Past') || topic.startsWith('Past') ? 'Past'
+  : 'Future'
 
-const RECENT = [
-  { name: 'Grammar Basics',      score: 85, date: 'May 10' },
-  { name: 'Advanced Vocabulary', score: 92, date: 'May 8'  },
-  { name: 'Reading Practice',    score: 78, date: 'May 5'  },
-]
+// One category per tense, sourced from the question JSON.
+const CATS = questionsByTense.map((g) => {
+  const f = FAMILY[familyOf(g.topic)]
+  return { Icon: f.Icon, color: f.color, name: g.topic, sub: `${g.questions.length-10} questions` }
+})
 
 const glass = {
   background: 'rgba(255,255,255,0.06)',
@@ -24,14 +31,16 @@ const glass = {
 }
 
 export default function Dashboard({ user, onStartQuiz, onLogout }) {
-  const avg    = useCountUp(85, 1000, 150)
-  const taken  = useCountUp(23, 900, 300)
-  const streak = useCountUp(7,  700, 450)
+  // Real stats from this user's saved quiz history.
+  const stats  = useMemo(() => computeStats(loadQuizHistory(user?.email)), [user?.email])
+  const avg    = useCountUp(stats.avgScore,     1000, 150)
+  const taken  = useCountUp(stats.quizzesTaken,  900, 300)
+  const streak = useCountUp(stats.streakDays,    700, 450)
 
   const STATS = [
-    { icon: <Award size={17} color="#fff" />,       bg: 'linear-gradient(135deg,#2b598f,#3d7ab5)', label: 'Average Score', val: `${avg}%`       },
-    { icon: <Clock size={17} color="#0f1623" />,    bg: 'linear-gradient(135deg,#5aabde,#3d8bbf)', label: 'Quizzes Taken', val: taken            },
-    { icon: <TrendingUp size={17} color="#fff" />,  bg: 'linear-gradient(135deg,#7a9e6e,#5d8a52)', label: 'Streak',        val: `${streak} days` },
+    { icon: <Award size={17} color="#fff" />,       bg: 'linear-gradient(135deg,#2b598f,#3d7ab5)', label: 'Average Score', val: `${avg}%`                              },
+    { icon: <Clock size={17} color="#0f1623" />,    bg: 'linear-gradient(135deg,#5aabde,#3d8bbf)', label: 'Quizzes Taken', val: taken                                  },
+    { icon: <TrendingUp size={17} color="#fff" />,  bg: 'linear-gradient(135deg,#7a9e6e,#5d8a52)', label: 'Streak',        val: `${streak} ${streak === 1 ? 'day' : 'days'}` },
   ]
 
   return (
@@ -128,24 +137,31 @@ export default function Dashboard({ user, onStartQuiz, onLogout }) {
           ))}
         </div>
 
-        {/* Main 2-col */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+        {/* Main — stacked full-width */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-          {/* Quiz Categories */}
-          <motion.div initial={{ opacity: 0, x: -14 }} animate={{ opacity: 1, x: 0 }}
+          {/* Quiz Categories — one per tense */}
+          <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.28 }}
             style={{ ...glass, borderRadius: 16, padding: '22px 20px' }}>
-            <h3 style={{ fontSize: '0.98rem', fontWeight: 700, color: '#fff', margin: '0 0 16px' }}>
+            <h3 style={{ fontSize: '0.98rem', fontWeight: 700, color: '#fff', margin: '0 0 6px' }}>
               Quiz Categories
             </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <p style={{ color: 'rgba(178,208,238,0.5)', fontSize: '0.78rem', margin: '0 0 16px' }}>
+              Pilih tense untuk berlatih — soal diambil dari bank soal.
+            </p>
+            {/* One tense per row; shows ~4 rows at a time, scroll for the rest */}
+            <div className="cats-scroll" style={{
+              display: 'grid', gridTemplateColumns: '1fr', gap: 10,
+              maxHeight: 248, overflowY: 'auto', paddingRight: 6,
+            }}>
               {CATS.map((cat, i) => (
                 <motion.button key={cat.name} type="button"
-                  initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.34 + i * 0.06 }}
+                  initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.32 + i * 0.04 }}
                   whileHover={{ background: 'rgba(255,255,255,0.1)' }}
                   whileTap={{ scale: 0.98 }}
-                  onClick={onStartQuiz}
+                  onClick={() => onStartQuiz(cat.name)}
                   style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                     padding: '11px 14px', borderRadius: 10,
@@ -155,7 +171,13 @@ export default function Dashboard({ user, onStartQuiz, onLogout }) {
                     transition: 'background 0.2s ease',
                   }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <span style={{ fontSize: '1.2rem' }}>{cat.emoji}</span>
+                    <span style={{
+                      width: 34, height: 34, borderRadius: 9, flexShrink: 0,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      background: `${cat.color}22`, border: `1px solid ${cat.color}40`,
+                    }}>
+                      <cat.Icon size={17} color={cat.color} />
+                    </span>
                     <div>
                       <p style={{ fontWeight: 600, color: '#fff', fontSize: '0.86rem', margin: 0 }}>{cat.name}</p>
                       <p style={{ color: 'rgba(178,208,238,0.5)', fontSize: '0.72rem', margin: 0 }}>{cat.sub}</p>
@@ -165,59 +187,6 @@ export default function Dashboard({ user, onStartQuiz, onLogout }) {
                 </motion.button>
               ))}
             </div>
-          </motion.div>
-
-          {/* Recent Performance */}
-          <motion.div initial={{ opacity: 0, x: 14 }} animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.3 }}
-            style={{ ...glass, borderRadius: 16, padding: '22px 20px' }}>
-            <h3 style={{ fontSize: '0.98rem', fontWeight: 700, color: '#fff', margin: '0 0 16px' }}>
-              Recent Performance
-            </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
-              {RECENT.map((r, i) => (
-                <motion.div key={r.name}
-                  initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.38 + i * 0.07 }}
-                  style={{
-                    padding: '11px 14px', borderRadius: 10,
-                    background: 'rgba(255,255,255,0.05)',
-                    border: '1px solid rgba(255,255,255,0.07)',
-                  }}>
-                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-                    <div>
-                      <p style={{ fontWeight: 600, color: '#fff', fontSize: '0.86rem', margin: '0 0 3px' }}>{r.name}</p>
-                      <p style={{ color: 'rgba(178,208,238,0.45)', fontSize: '0.73rem', margin: 0 }}>{r.date}</p>
-                    </div>
-                    <span style={{
-                      padding: '3px 10px', borderRadius: 99, fontWeight: 700,
-                      fontSize: '0.78rem', color: '#fff',
-                      background: r.score >= 80
-                        ? 'linear-gradient(135deg,#7a9e6e,#5d8a52)'
-                        : 'linear-gradient(135deg,#2b598f,#3d7ab5)',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
-                    }}>
-                      {r.score}%
-                    </span>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-            <motion.button type="button"
-              whileHover={{ scale: 1.02, boxShadow: '0 10px 28px rgba(90,171,222,0.35)' }}
-              whileTap={{ scale: 0.98 }}
-              onClick={onStartQuiz}
-              className="shimmer-btn"
-              style={{
-                width: '100%', padding: '13px', borderRadius: 10, border: 'none', cursor: 'pointer',
-                background: 'linear-gradient(135deg, #2b598f, #4a9acc)',
-                color: '#fff', fontWeight: 700, fontSize: '0.88rem',
-                boxShadow: '0 6px 20px rgba(43,89,143,0.4)',
-                position: 'relative', overflow: 'hidden',
-                transition: 'box-shadow 0.25s ease',
-              }}>
-              Start New Quiz
-            </motion.button>
           </motion.div>
         </div>
       </div>

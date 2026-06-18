@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
-import { Award, Lightbulb, ChevronRight } from 'lucide-react'
+import { Award, Lightbulb, ChevronRight, Download } from 'lucide-react'
 import confetti from 'canvas-confetti'
 import { useCountUp } from '../hooks/useCountUp'
 

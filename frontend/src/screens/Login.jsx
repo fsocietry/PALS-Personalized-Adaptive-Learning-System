@@ -1,6 +1,4 @@
-import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { BookOpen, ArrowRight } from 'lucide-react'
 import iconPng from '../assets/icon.png'
 import { auth } from '../firebase'
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth'
@@ -12,49 +10,35 @@ const BLOBS = [
   { size: 180, left: '60%',  top: '2%',   color: '#1a3a6e', delay: 1 },
 ]
 
+// Backend base URL — configurable per environment (defaults to local dev).
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+
 export default function Login({ onStart }) {
-  const [username, setUsername] = useState('')
-  const [email, setEmail]       = useState('')
-  const [focused, setFocus]     = useState(null)
-
-  const handleStart = () =>
-    onStart({ name: username || 'Student', email: email || 'student@example.com' })
-
   const handleGoogleLogin = async () => {
-  try {
-    const provider = new GoogleAuthProvider()
+    try {
+      const provider = new GoogleAuthProvider()
+      const result = await signInWithPopup(auth, provider)
+      const user = result.user
 
-    const result = await signInWithPopup(auth, provider)
-
-    const user = result.user
-
-    const token = await user.getIdToken()
-
-    const response = await fetch(
-      "http://localhost:3000/api/auth/login",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+      // Best-effort backend verification — don't block login if the API is unreachable.
+      try {
+        const token = await user.getIdToken()
+        const response = await fetch(`${API_URL}/api/auth/login`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        console.log('Response Backend:', await response.json())
+      } catch (apiErr) {
+        console.warn('Backend verification skipped:', apiErr.message)
       }
-    )
 
-    const data = await response.json()
-
-    console.log("Response Backend:", data)
-
-    onStart({
-      name: user.displayName,
-      email: user.email
-    })
-
-  } catch (error) {
-  console.error("Firebase Error Code:", error.code)
-  console.error("Firebase Error Message:", error.message)
-  console.error(error)
-}
-}
+      onStart({ name: user.displayName, email: user.email })
+    } catch (error) {
+      console.error('Firebase Error Code:', error.code)
+      console.error('Firebase Error Message:', error.message)
+      console.error(error)
+    }
+  }
 
   return (
     <motion.div
@@ -149,43 +133,11 @@ export default function Login({ onStart }) {
             boxShadow: '0 32px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.07)',
           }}>
 
-          {[
-            { id: 'username', label: 'Username', val: username, set: setUsername, ph: 'Enter your username' },
-            { id: 'email',    label: 'Email',    val: email,    set: setEmail,    ph: 'Enter your email'    },
-          ].map((f, i) => (
-            <div key={f.id} style={{ marginBottom: i === 0 ? 18 : 28 }}>
-              <label style={{
-                display: 'block', fontWeight: 600, fontSize: '0.73rem',
-                color: 'rgba(178,208,238,0.75)', marginBottom: 8,
-                letterSpacing: '0.9px', textTransform: 'uppercase',
-              }}>
-                {f.label}
-              </label>
-              <motion.div animate={{ boxShadow: focused === f.id ? '0 0 0 3px rgba(113,191,235,0.18)' : '0 0 0 0px transparent' }}
-                style={{ borderRadius: 10 }}>
-                <input
-                  type="text" value={f.val} placeholder={f.ph}
-                  onChange={e => f.set(e.target.value)}
-                  onFocus={() => setFocus(f.id)}
-                  onBlur={() => setFocus(null)}
-                  style={{
-                    width: '100%', padding: '13px 16px', borderRadius: 10,
-                    border: `1.5px solid ${focused === f.id ? 'rgba(113,191,235,0.65)' : 'rgba(255,255,255,0.08)'}`,
-                    background: focused === f.id ? 'rgba(113,191,235,0.07)' : 'rgba(255,255,255,0.04)',
-                    color: '#fff', fontSize: '0.95rem', outline: 'none', boxSizing: 'border-box',
-                    transition: 'all 0.25s ease',
-                    caretColor: '#71bfeb',
-                  }}
-                />
-              </motion.div>
-            </div>
-          ))}
-
           <motion.button
             type="button"
             whileHover={{ scale: 1.02, boxShadow: '0 16px 48px rgba(90,171,222,0.45)' }}
             whileTap={{ scale: 0.98 }}
-            onClick={handleStart}
+            onClick={handleGoogleLogin}
             className="shimmer-btn"
             style={{
               width: '100%', padding: '15px', borderRadius: 12, border: 'none', cursor: 'pointer',
@@ -196,29 +148,16 @@ export default function Login({ onStart }) {
               position: 'relative', overflow: 'hidden',
               transition: 'box-shadow 0.3s ease',
             }}>
-            <BookOpen size={19} />
-            Start Your Journey
-            <ArrowRight size={17} />
+            <img
+              src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+              alt="" width={20} height={20}
+              style={{ background: '#fff', borderRadius: '50%', padding: 2 }}
+            />
+            Login dengan Google
           </motion.button>
 
-          <button
-            onClick={handleGoogleLogin}
-            style={{
-              width: '100%',
-              padding: '15px',
-              borderRadius: 12,
-              border: '1px solid rgba(255,255,255,0.1)',
-              background: 'rgba(255,255,255,0.05)',
-              color: '#fff',
-              cursor: 'pointer',
-              marginTop: 12
-            }}
-          >
-            Login dengan Google
-          </button>
-
           <p style={{ textAlign: 'center', fontSize: '0.75rem', color: 'rgba(178,208,238,0.35)', margin: '14px 0 0' }}>
-            No account required · Just dive in
+            Sign in to start your journey
           </p>
         </motion.div>
 

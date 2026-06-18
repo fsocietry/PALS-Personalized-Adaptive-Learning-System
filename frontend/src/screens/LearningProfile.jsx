@@ -3,28 +3,52 @@ import { Award, Clock, Lightbulb, TrendingUp, Target, CircleCheckBig, TriangleAl
 import iconPng from '../assets/icon.png'
 import { useCountUp } from '../hooks/useCountUp'
 
-function compute(results) {
+// ─── PERUBAHAN 1: Tambahkan parameter aiResults ke fungsi compute ───
+function compute(results, aiResults) {
   if (!results) return {
     accuracy: 13, avgTime: 7, hints: 3, level: 'Beginner',
     style: 'Methodical & Consistent',
     strong: ['Subject-Verb Agreement'],
     weak: ['Articles', 'Academic Words', 'Advanced Vocabulary'],
   }
+  
   const { answers, hintsUsed, times, questions } = results
   const correct  = answers.filter((a, i) => a === questions[i].answer).length
   const accuracy = Math.round((correct / questions.length) * 100)
   const avgTime  = Math.round(times.reduce((s, t) => s + t, 0) / times.length) || 0
   const hints    = hintsUsed.reduce((s, h) => s + h, 0)
-  const level    = accuracy >= 80 ? 'Advanced' : accuracy >= 55 ? 'Intermediate' : 'Beginner'
+  
+  // ─── LOGIKA AI BARU ───
+  let level = 'Beginner'; // Default fallback
+  
+  // Cek apakah ada hasil AI yang masuk dari props
+  if (aiResults && aiResults.length > 0) {
+      // Ambil prediksi (contoh: mengambil prediksi dari cluster pertama)
+      const finalAiLevel = aiResults[0].prediction; 
+      
+      // Terjemahkan angka AI menjadi teks (2=Beginner, 0=Intermediate, 1=Advanced)
+      if (finalAiLevel === 1) level = 'Advanced';
+      else if (finalAiLevel === 0) level = 'Intermediate';
+      else if (finalAiLevel === 2) level = 'Beginner';
+  } else {
+      // Fallback logika lama JIKA API Hugging Face error/timeout
+      level = accuracy >= 80 ? 'Advanced' : accuracy >= 55 ? 'Intermediate' : 'Beginner'
+  }
+  // ─── BATAS LOGIKA AI ───
+
   let style = 'Methodical & Consistent'
   if (avgTime < 15 && hints === 0) style = 'Quick Learner'
   else if (avgTime > 45) style = 'Analytical & Thorough'
   else if (hints > 5) style = 'Visual & Structured'
+  
   const strong = [...new Set(answers.map((a, i) => a === questions[i].answer ? questions[i].category : null).filter(Boolean))]
   const weak   = [...new Set(answers.map((a, i) => a !== questions[i].answer ? questions[i].category : null).filter(Boolean))]
-  return { accuracy, avgTime, hints, level, style,
+  
+  return { 
+    accuracy, avgTime, hints, level, style,
     strong: strong.length ? strong : ['Grammar'],
-    weak: weak.length ? weak : ['Vocabulary'] }
+    weak: weak.length ? weak : ['Vocabulary'] 
+  }
 }
 
 const STYLE_DESC = {
@@ -48,8 +72,12 @@ const glass = {
   boxShadow: '0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.07)',
 }
 
-export default function LearningProfile({ results, onContinue }) {
-  const p     = compute(results)
+// ─── PERUBAHAN 2: Tambahkan aiResults ke props komponen ───
+export default function LearningProfile({ results, aiResults, onContinue }) {
+  
+  // Lempar aiResults ke dalam fungsi compute
+  const p     = compute(results, aiResults) 
+  
   const accD  = useCountUp(p.accuracy, 1100, 300)
   const timeD = useCountUp(p.avgTime, 900, 450)
   const hintD = useCountUp(p.hints, 800, 600)
