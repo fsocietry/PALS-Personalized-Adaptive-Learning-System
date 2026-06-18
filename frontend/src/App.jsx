@@ -65,7 +65,7 @@ export default function App() {
           />
         )}
         {screen === 'quiz' && (
-          <DiagnosticQuiz
+        <DiagnosticQuiz
             key="quiz"
             // Tangkap 3 parameter terpisah hasil kiriman dari fungsi 'next' di kuis
             onComplete={(quizResult, telemetryRows, sessionId) => {
@@ -145,13 +145,13 @@ export default function App() {
           />
         )}
         {screen === 'dashboard' && (
-          <Dashboard
+        <Dashboard
             key="dashboard"
             user={user}
             results={diagnosticResults}
             onStartQuiz={(topic) => { setPracticeTopic(topic); setScreen('practice') }}
             onLogout={() => setScreen('login')}
-          />
+        />
         )}
         {screen === 'practice' && (
           <PracticeQuiz
@@ -241,7 +241,7 @@ export default function App() {
               setScreen('complete')
             }}
             onExit={() => setScreen('dashboard')}
-          />
+        />
         )}
         {screen === 'complete' && (
           <QuizComplete
