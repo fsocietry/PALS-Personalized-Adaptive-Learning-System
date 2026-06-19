@@ -4,7 +4,6 @@ const {
   upsertLearningPath,
   upsertTopicProfile,
   getUserProfile,
-  // 🎯 FIX: Import fungsi query Data Connect untuk menarik list history kuis dari PostgreSQL
   getQuizAttempts 
 } = require("../src/dataconnect-admin-generated");
 
@@ -14,7 +13,6 @@ const TENSE_TOPICS = [
   "Simple Future Tense", "Future Continuous Tense", "Future Perfect Tense", "Future Perfect Continuous Tense"
 ];
 
-// Kamus pemetaan tingkat kesulitan string ke integer skema Data Connect
 const DIFFICULTY_MAP = { easy: 1, medium: 2, hard: 3, mixed: 0 };
 
 exports.submitQuiz = async (req, res) => {
@@ -50,7 +48,7 @@ exports.submitQuiz = async (req, res) => {
         let correctAnswerCount = 0;
         let totalQuestionCount = tenseQuestionIndices.length;
 
-        value => tenseQuestionIndices.forEach((qIdx) => {
+        tenseQuestionIndices.forEach((qIdx) => {
           if (answers[qIdx] === questions[qIdx].answer) {
             correctAnswerCount++;
           }
@@ -182,13 +180,12 @@ exports.getQuizHistory = async (req, res) => {
     const userId = req.user.uid;
     console.log("📜 [Backend] Mengambil riwayat kuis riil untuk userId:", userId);
 
+    // Fetch relational database entries through generated Admin SDK handler
     const queryResult = await getQuizAttempts({ userId });
-    
     const dbHistory = queryResult.data?.quizAttempts || queryResult.data?.quizAttemptsList || [];
 
     console.log(`🍏 [Backend] Sukses menemukan ${dbHistory.length} entri kuis untuk user ini.`);
     
-    // 3. Kembalikan data aslinya ke frontend!
     return res.status(200).json(dbHistory);
   } catch (error) {
     console.error("🛑 [Backend] Gagal mengambil riwayat kuis dari PostgreSQL:", error);
