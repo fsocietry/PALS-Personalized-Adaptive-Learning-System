@@ -1,10 +1,10 @@
-const express = require("express");
+const express = require('express');
 const router = express.Router();
 
-const verifyToken = require("../middleware/authMiddleware");
-const userController = require("../controllers/userController");
+const { getUserProfile } = require('../controllers/userController'); 
+const authMiddleware = require('../middleware/authMiddleware');
 
-// Endpoint untuk mengambil profil dan statistik user: GET /api/user/stats
-router.get("/stats", verifyToken, userController.getUserStats);
+// Baris 8 lo yang memicu eror:
+router.get('/profile', authMiddleware, getUserProfile); 
 
 module.exports = router;
