@@ -179,6 +179,12 @@ After a quiz finishes, the `Analyzing` screen orchestrates the pipeline in `fron
 
 The Hugging Face and Google Apps Script endpoints are configured at the top of `api.js`; the backend base URL comes from `VITE_API_URL` (default `http://localhost:3000`).
 
+### Model Artifacts & Deployment References
+
+To facilitate model transparency, auditability, and live pipeline verification, the following infrastructure resources are provisioned:
+
+* **Model Artifact Repository (Binary Storage):** [Google Drive Model Storage](https://drive.google.com/drive/folders/1ZVoiBEpE6ume12MUSphupE9O9S41L4KV?usp=sharing) — Houses the serialized `.pkl` (Pickle) binaries, containing the trained machine learning weights, cluster centroids, and preprocessing scaling objects.
+* **Production Inference Gateway (Live API):** [Hugging Face Space Live API Docs](https://maisorpt-pals-model-api.hf.space/docs) — Hosted REST API endpoint that wraps the serialized pickle files into an operational inference pipeline.
 ---
 
 ## Getting Started
