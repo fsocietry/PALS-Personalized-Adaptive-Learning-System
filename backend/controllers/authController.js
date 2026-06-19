@@ -1,4 +1,3 @@
-// Import fungsi upsertUser dari SDK yang di-generate
 const { upsertUser } = require("../src/dataconnect-admin-generated");
 
 exports.login = async (req, res) => {
@@ -11,7 +10,7 @@ exports.login = async (req, res) => {
       id: uid,
       email: email,
       name: name || "PALS Student", 
-      createdAt: new Date() // ✅ FIX: Ganti jadi objek Date murni agar lolos validasi Timestamp!
+      createdAt: new Date()
     });
 
     res.status(200).json({

@@ -5,7 +5,6 @@ const {
   upsertTopicProfile,
   getUserProfile,
   // 🎯 FIX: Import fungsi query Data Connect untuk menarik list history kuis dari PostgreSQL
-  // (Sesuaikan namanya jika di file .gql lo namanya 'listQuizAttempts' atau sejenisnya)
   getQuizAttempts 
 } = require("../src/dataconnect-admin-generated");
 
@@ -25,7 +24,6 @@ exports.submitQuiz = async (req, res) => {
     const userId = req.user.uid;
     const { isDiagnostic } = req.body;
 
-    // 🎯 LALUAN A: JIKA PAYLOAD ADALAH DIAGNOSTIC BULK (12 TENSES)
     if (isDiagnostic) {
       console.log("🎯 Processing Resilient BULK DIAGNOSTIC Matrix Insertion...");
       const { questions, answers, aiResults } = req.body;
@@ -70,7 +68,6 @@ exports.submitQuiz = async (req, res) => {
         let finalPrediction = Number(predictedLevel);
         if (correctAnswerCount === 0) finalPrediction = 2;
 
-        // 1. Amankan data attempt per tenses ke PostgreSQL Connect
         await insertQuizAttempt({
           userId,
           topicIndex,
@@ -81,7 +78,6 @@ exports.submitQuiz = async (req, res) => {
           createdAt: new Date()
         });
 
-        // 2. Amankan data cluster prediksi ke tabel Prediction
         await upsertPrediction({
           userId,
           topicIndex,
@@ -93,7 +89,6 @@ exports.submitQuiz = async (req, res) => {
         profileData[`topic${topicIndex}`] = finalPrediction;
       }
 
-      // 3. Simpan full snapshot kognitif ke tabel TopicProfile
       await upsertTopicProfile({
         userId,
         ...profileData,
@@ -106,7 +101,6 @@ exports.submitQuiz = async (req, res) => {
       });
     } 
     
-    // 📚 LALUAN B: JIKA PAYLOAD ADALAH SINGLE PRACTICE QUIZ
     else {
       console.log("📚 Processing SINGLE SUBJECT PRACTICE Node Insertion...");
       const { 
@@ -116,7 +110,6 @@ exports.submitQuiz = async (req, res) => {
 
       const diffInt = DIFFICULTY_MAP[String(difficulty).toLowerCase()] || 2;
 
-      // 1. Amankan log kuis tunggal ke tabel QuizAttempt
       await insertQuizAttempt({
         userId,
         topicIndex: Number(topicIndex),
@@ -127,7 +120,6 @@ exports.submitQuiz = async (req, res) => {
         createdAt: new Date()
       });
 
-      // 2. Amankan data prediksi klasifikasi ML terbaru
       await upsertPrediction({
         userId,
         topicIndex: Number(topicIndex),
@@ -136,7 +128,6 @@ exports.submitQuiz = async (req, res) => {
         updatedAt: new Date()
       });
 
-      // 3. Amankan data rekomendasi jalur belajar adaptif aktif
       await upsertLearningPath({
         userId,
         currentTopic: Number(topicIndex),
@@ -165,7 +156,6 @@ exports.submitQuiz = async (req, res) => {
 
       profileData[`topic${topicIndex}`] = Number(predictedLevel);
 
-      // 4. Update baris data TopicProfile secara aman di PostgreSQL
       await upsertTopicProfile({
         userId,
         ...profileData,
@@ -187,16 +177,13 @@ exports.submitQuiz = async (req, res) => {
   }
 };
 
-// ─── 📜 SEKTOR FIX UTAMA: TARIK DATA ASLI DARI POSTGRESQL CLOUD SQL ───
 exports.getQuizHistory = async (req, res) => {
   try {
     const userId = req.user.uid;
     console.log("📜 [Backend] Mengambil riwayat kuis riil untuk userId:", userId);
 
-    // 1. Eksekusi fungsi query Data Connect Admin SDK
     const queryResult = await getQuizAttempts({ userId });
     
-    // 2. Ekstrak data array attempts (sesuaikan penamaan field schema GraphQL lo, misal: quizAttempts atau quizAttemptsList)
     const dbHistory = queryResult.data?.quizAttempts || queryResult.data?.quizAttemptsList || [];
 
     console.log(`🍏 [Backend] Sukses menemukan ${dbHistory.length} entri kuis untuk user ini.`);

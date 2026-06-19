@@ -1,4 +1,3 @@
-# 🎯 1. MUTASI USER (Untuk Login & Sinkronisasi Sesi Awal)
 mutation UpsertUser($id: String!, $email: String!, $name: String!, $createdAt: Timestamp!) @auth(level: NO_ACCESS) {
   user_upsert(
     data: {
@@ -10,7 +9,7 @@ mutation UpsertUser($id: String!, $email: String!, $name: String!, $createdAt: T
   )
 }
 
-# 📝 2. MUTASI LOG RIWAYAT KUIS (Tetap Pakai Insert karena Mencatat Setiap Sesi Selesai)
+
 mutation InsertQuizAttempt($userId: String!, $topicIndex: Int!, $score: Float!, $totalQuestion: Int!, $correctAnswer: Int!, $difficulty: Int!, $createdAt: Timestamp!) @auth(level: NO_ACCESS) {
   quizAttempt_insert(data: {
     user: { id: $userId }
@@ -23,7 +22,7 @@ mutation InsertQuizAttempt($userId: String!, $topicIndex: Int!, $score: Float!, 
   })
 }
 
-# 🧠 3. MUTASI PREDIKSI ML AI (Menggunakan Upsert Agar Unik 1-to-1 Per Topik User)
+
 mutation UpsertPrediction($userId: String!, $topicIndex: Int!, $predictedLevel: Int!, $confidence: Float!, $updatedAt: Timestamp!) @auth(level: NO_ACCESS) {
   prediction_upsert(data: {  
     user: { id: $userId }
@@ -34,7 +33,7 @@ mutation UpsertPrediction($userId: String!, $topicIndex: Int!, $predictedLevel: 
   })
 }
 
-# 🛣️ 4. MUTASI JALUR BELAJAR ADAPTIF (Menggunakan Upsert Agar Unik 1-to-1 Per User)
+
 mutation UpsertLearningPath($userId: String!, $currentTopic: Int!, $recommendedDifficulty: Int!, $nextTopic: Int!, $updatedAt: Timestamp!) @auth(level: NO_ACCESS) {
   learningPath_upsert(data: {  
     user: { id: $userId }
@@ -45,7 +44,6 @@ mutation UpsertLearningPath($userId: String!, $currentTopic: Int!, $recommendedD
   })
 }
 
-# 📊 5. MUTASI PROFIL KOGNITIF TENSES (Menggunakan Upsert Agar Meng-update Row yang Sama)
 mutation UpsertTopicProfile(
   $userId: String!,
   $topic1: Int!, $topic2: Int!, $topic3: Int!, $topic4: Int!,

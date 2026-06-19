@@ -197,13 +197,9 @@ export function computeStreak(history) {
   return streak;
 }
 
-/**
- * 3. POST KE GOOGLE DRIVE: Mengirimkan payload kompilasi data ke Google Apps Script
- */
 export async function sendToGoogleDrive(globalSessionId, records) {
   console.log("💾 Mengirim kompilasi data mentah ke Google Sheets...");
   
-  // Rekonstruksi struktur payload bersarang agar sesuai dengan kebutuhan Apps Script Data Collector lama
   const summaries = records.map(row => ({
     question_id: row.question_id,
     topic: row.topic,
@@ -226,7 +222,6 @@ export async function sendToGoogleDrive(globalSessionId, records) {
     }
   }));
 
-  // AMAN: Kita oper records mentah ke field session agar folder session di Drive tidak kosong
   const payload = {
     sessionId: globalSessionId,
     summary: summaries,

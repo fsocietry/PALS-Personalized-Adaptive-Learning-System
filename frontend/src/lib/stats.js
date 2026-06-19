@@ -1,6 +1,3 @@
-// Per-user quiz history → powers the dashboard stat cards with real data.
-// Stored in localStorage so it survives logout/login on the same device.
-
 const KEY = (email) => `pals_quiz_history_${email || 'anon'}`
 
 // Local calendar date as YYYY-MM-DD (timezone-aware).

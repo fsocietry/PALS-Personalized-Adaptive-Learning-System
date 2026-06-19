@@ -45,7 +45,6 @@ export default function DiagnosticQuiz({ onComplete }) {
     const a = [...answers]; a[idx] = i; setAnswers(a)
     tele.select(idx, i)
 
-    // Aligned with PracticeQuiz behavior: default confidence on pick
     if (confidence[idx] === null) {
       const nextConf = [...confidence]
       nextConf[idx] = 'yakin'

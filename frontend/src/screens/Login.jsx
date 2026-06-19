@@ -10,7 +10,6 @@ const BLOBS = [
   { size: 180, left: '60%',  top: '2%',   color: '#1a3a6e', delay: 1 },
 ]
 
-// Backend base URL — configurable per environment (defaults to local dev).
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
 
 export default function Login({ onStart }) {
@@ -20,7 +19,6 @@ export default function Login({ onStart }) {
       const result = await signInWithPopup(auth, provider)
       const user = result.user
 
-      // Best-effort backend verification — don't block login if the API is unreachable.
       try {
         const token = await user.getIdToken()
         const response = await fetch(`${API_URL}/api/auth/login`, {
@@ -50,7 +48,6 @@ export default function Login({ onStart }) {
         padding: 24, position: 'relative', overflow: 'hidden',
       }}>
 
-      {/* Animated blur blobs */}
       {BLOBS.map((b, i) => (
         <motion.div key={i}
           style={{
@@ -64,7 +61,6 @@ export default function Login({ onStart }) {
         />
       ))}
 
-      {/* Dot grid */}
       <div style={{
         position: 'absolute', inset: 0, pointerEvents: 'none',
         backgroundImage: 'radial-gradient(rgba(113,191,235,0.1) 1px, transparent 1px)',
@@ -75,7 +71,6 @@ export default function Login({ onStart }) {
 
       <div style={{ width: '100%', maxWidth: 440, position: 'relative', zIndex: 10 }}>
 
-        {/* Branding */}
         <motion.div
           initial={{ opacity: 0, y: 36 }} animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15, type: 'spring', stiffness: 70, damping: 16 }}

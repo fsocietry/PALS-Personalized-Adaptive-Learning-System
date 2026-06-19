@@ -150,7 +150,6 @@ export default function PracticeQuiz({ topic, cognitiveProfile, onComplete, onEx
     timesRef.current[idx] = Math.round((Date.now() - tStart.current) / 1000)
   }
 
-  // 🧠 ENHANCED REAL-TIME ADAPTIVE ENGINE (WIDE OVERLAP)
   const goNext = async () => {
     recordTime()
     
@@ -160,7 +159,6 @@ export default function PracticeQuiz({ topic, cognitiveProfile, onComplete, onEx
       
       let nextDiff = currentDiff;
       if (isCorrect) {
-        // Karena sekarang Struggling diizinkan punya elemen Hard, aturannya kita longgarkan
         if (currentDiff === 'easy' && allowedDiffs.includes('medium')) nextDiff = 'medium';
         else if (currentDiff === 'medium' && allowedDiffs.includes('hard')) nextDiff = 'hard';
         console.log(`📈 BENAR! Kesulitan naik menjadi: ${nextDiff}`);
@@ -170,7 +168,6 @@ export default function PracticeQuiz({ topic, cognitiveProfile, onComplete, onEx
         console.log(`📉 SALAH! Kesulitan turun menjadi: ${nextDiff}`);
       }
 
-      // DYNAMIC NODE SWAPPING: Tukar isi index soal berikutnya secara adaptif & ter-gating
       const usedIds = QS.slice(0, idx + 1).map(item => item.id);
       let adaptiveNextQ = pools[nextDiff]?.find(item => !usedIds.includes(item.id));
       
@@ -260,7 +257,6 @@ export default function PracticeQuiz({ topic, cognitiveProfile, onComplete, onEx
                 </div>
               </div>
 
-              {/* ✅ BOX HINT YANG SUDAH DIPERBAIKI SAKLEK */}
               <AnimatePresence>
                 {hintN > 0 && (
                   <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} style={{ overflow: 'hidden', marginBottom: 16 }}>
@@ -278,7 +274,6 @@ export default function PracticeQuiz({ topic, cognitiveProfile, onComplete, onEx
 
               <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#fff', lineHeight: 1.5, marginBottom: 22 }}>{q.text}</h2>
 
-              {/* Options Items */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
                 {q.options && q.options.map((opt, i) => {
                   const sel = selected === i
@@ -295,7 +290,6 @@ export default function PracticeQuiz({ topic, cognitiveProfile, onComplete, onEx
 
               {selected !== null && <ConfidencePicker value={confidence[idx]} onPick={isSubmitting ? null : pickConfidence} />}
 
-              {/* Navigation Bar */}
               <div style={{ display: 'flex', gap: 12, marginTop: 24 }}>
                 <motion.button type="button" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} onClick={goPrev} disabled={idx === 0 || isSubmitting}
                   style={{ ...navButtonStyle, color: (idx === 0 || isSubmitting) ? 'rgba(255,255,255,0.2)' : 'rgba(178,208,238,0.8)', cursor: (idx === 0 || isSubmitting) ? 'not-allowed' : 'pointer' }}>
@@ -321,7 +315,6 @@ export default function PracticeQuiz({ topic, cognitiveProfile, onComplete, onEx
         </AnimatePresence>
       </div>
 
-      {/* Global Navigation Overlay Panel */}
       <AnimatePresence>
         {showNav && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowNav(false)}

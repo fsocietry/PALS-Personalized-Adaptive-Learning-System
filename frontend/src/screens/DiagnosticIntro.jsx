@@ -51,7 +51,6 @@ export default function DiagnosticIntro({ onBegin }) {
             boxShadow: '0 32px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.07)',
           }}>
 
-          {/* Core Brand Identity */}
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 28 }}>
             <div style={{ position: 'relative', width: 96, height: 96 }}>
               <div style={{
@@ -94,7 +93,6 @@ export default function DiagnosticIntro({ onBegin }) {
             Adaptive Proficiency Calibration
           </motion.p>
 
-          {/* ✅ REVISI: Narasi dibersihkan dari Postgres & Hugging face */}
           <motion.p
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.34 }}
             style={{ color: 'rgba(178,208,238,0.65)', fontSize: '0.86rem', textAlign: 'center',
@@ -102,7 +100,6 @@ export default function DiagnosticIntro({ onBegin }) {
             This initial evaluation captures your core learning metrics to accurately map your initial comprehension level and customize your adaptive practice framework.
           </motion.p>
 
-          {/* ✅ REVISI: Metrik diubah ke istilah EdTech baku */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 20 }}>
             {[
               {
@@ -136,7 +133,6 @@ export default function DiagnosticIntro({ onBegin }) {
             ))}
           </div>
 
-          {/* Session Constraints */}
           <motion.div
             initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.62 }}

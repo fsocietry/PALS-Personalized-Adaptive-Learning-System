@@ -20,6 +20,7 @@ import {
   TENSE_TOPICS                  
 } from './lib/api'
 
+// Helper function to calculate quiz scores
 function scoreOf(r) {
   if (!r || !r.questions || !r.answers) return 0
   const correct = r.answers.filter((a, i) => a === r.questions[i].answer).length
@@ -27,9 +28,6 @@ function scoreOf(r) {
 }
 
 const doneKey = (email) => `pals_diagnostic_done_${email || 'anon'}`
-function hasDoneDiagnostic(email) {
-  try { return localStorage.getItem(doneKey(email)) === '1' } catch { return false }
-}
 function markDiagnosticDone(email) {
   try { localStorage.setItem(doneKey(email), '1') } catch {}
 }
@@ -54,24 +52,22 @@ export default function App() {
   const [adaptiveFallbackTopic, setAdaptiveFallbackTopic] = useState(null)
   const [isSmartPractice, setIsSmartPractice] = useState(false)
 
+  // Synchronize student data boundaries from PostgreSQL instance
   const syncPostgresProfile = useCallback(async (email) => {
     if (!email) return
     try {
-      console.log("🔍 [App.jsx] Fetching profile & history for:", email);
+      console.log("🔍 [Telemetry] Rehydrating data states for user session:", email);
       const [postgresData, historyData] = await Promise.all([
         fetchUserProfileFromPostgres(email),
         fetchQuizHistoryFromPostgres()
       ]);
 
-      console.log("📦 [App.jsx] Raw Postgres User Profile Data:", postgresData);
-      
-      // 🎯 DIAGNOSTIC LOG: Tampilkan tabel riwayat kuis mentah ke console!
       if (historyData && historyData.length > 0) {
-        console.group("📜 [App.jsx] SUCCESS: Fetched quizAttempt Data from PostgreSQL");
+        console.group("📜 [Telemetry] SUCCESS: Historical quizAttempt synchronization logs loaded");
         console.table(historyData);
         console.groupEnd();
       } else {
-        console.log("⚠️ [App.jsx] WARNING: quizAttempt table is empty or failed to load.");
+        console.warn("⚠️ [Telemetry] WARNING: Historical quizAttempt entity data boundaries are empty.");
       }
 
       setQuizHistory(historyData || []);
@@ -83,7 +79,6 @@ export default function App() {
       });
 
       if (isProfileCalibrated) {
-        console.log("✅ [App.jsx] Profile calibrated, mapping topics...");
         const resolvedMap = {};
         TENSE_TOPICS.forEach((topicName, idx) => {
           const val = profile[`topic${idx + 1}`];
@@ -93,6 +88,7 @@ export default function App() {
         setCognitiveProfile(resolvedMap);
         setHasDiagnostic(true); 
 
+        // Identify the localized weakest clustering boundary for personalized backup options
         let weakestTopic = TENSE_TOPICS[0];
         let maxClusterSeverity = -1;
         TENSE_TOPICS.forEach((topicName) => {
@@ -104,7 +100,6 @@ export default function App() {
         });
         setAdaptiveFallbackTopic(weakestTopic);
       } else {
-        console.log("⚠️ [App.jsx] No calibrated profile found. Mandatory Diagnostic Active.");
         const resolvedMap = {};
         TENSE_TOPICS.forEach((topicName) => {
           resolvedMap[topicName] = -1;
@@ -113,12 +108,13 @@ export default function App() {
         setHasDiagnostic(false); 
       }
     } catch (err) {
-      console.error("🛑 [App.jsx] Gagal sinkronisasi dari PostgreSQL:", err)
+      console.error("🛑 [Telemetry] CRITICAL: PostgreSQL session bridge crashed:", err)
       setCognitiveProfile({})
       setHasDiagnostic(false)
     }
   }, [])
 
+  // Manage core Firebase Authentication observer boundaries
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
@@ -134,11 +130,11 @@ export default function App() {
   }, [syncPostgresProfile])
 
   if (isAuthChecking) {
-    return <div style={{ minHeight: '100vh', background: '#0d1421', display: 'flex', justifyContent: 'center', alignItems: 'center', color: '#fff' }}>Loading Session...</div>
+    return <div style={{ minHeight: '100vh', background: '#0d1421', display: 'flex', justifyContent: 'center', alignItems: 'center', color: '#fff', fontFamily: 'sans-serif' }}>Loading Session...</div>
   } 
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f9feff' }}>
+    <div style={{ minHeight: '100vh', background: '#0d1421' }}>
       <AnimatePresence mode="wait">
         {screen === 'login' && (
           <Login key="login" onStart={(u) => { setUser(u); setScreen('dashboard'); }} />
@@ -178,7 +174,7 @@ export default function App() {
                 await syncPostgresProfile(user.email);
                 setScreen('profile');
               } catch (error) {
-                console.error("🛑 Gagal menyimpan:", error);
+                console.error("🛑 [Telemetry] Failed to commit diagnostic state:", error);
                 setScreen('profile');
               }
             }}
@@ -266,7 +262,7 @@ export default function App() {
                 await saveQuizToBackend(sqlPayload);
                 await syncPostgresProfile(user.email);
               } catch (error) {
-                console.error("🛑 Gagal memproses pipeline kognitif Practice / SQL:", error)
+                console.error("🛑 [Telemetry] Failed to parse model inferences sequence:", error)
               }
               setScreen('complete')
             }}

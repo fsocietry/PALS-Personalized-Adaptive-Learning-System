@@ -38,19 +38,14 @@ export default function Analyzing({ sessionId, rawTelemetryRecords, onDone }) {
       }
 
       try {
-        // 1. Preprocessing lokal di browser client
         const mlPayloads = preprocessTelemetryForML(rawTelemetryRecords)
 
-        // ✅ FIX PERFORMA: Panggil Drive Webhook secara independen di background (Fire-and-Forget)
-        // Langkah ini tidak akan menahan loading spinner kamu jika Google Apps Script lambat merespons.
         sendToGoogleDrive(sessionId, rawTelemetryRecords)
 
-        // 2. Cukup await respon inferensi kognitif dari Hugging Face saja
         console.log("🧠 Executing Hugging Face Inference Node...")
         const hfResponses = await sendToHuggingFace(mlPayloads)
         console.log("🧠 Hugging Face Inference Results:", hfResponses)
 
-        // 3. Berhasil! Beri delay sedikit agar transisi mulus, lalu panggil callback onDone
         setTimeout(() => {
           onDone(hfResponses)
         }, 500)
@@ -59,7 +54,6 @@ export default function Analyzing({ sessionId, rawTelemetryRecords, onDone }) {
         console.error("🛑 Terjadi gangguan pada pipeline integrasi:", error)
         setErrorMessage("Connection issue detected. Retrying layout...")
         
-        // Fallback jika server down/sleep agar web production tidak freeze selamanya
         setTimeout(() => {
           onDone([])
         }, 3000)

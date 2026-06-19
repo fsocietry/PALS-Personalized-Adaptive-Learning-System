@@ -4,7 +4,6 @@ import { Award, Clock, Lightbulb, TrendingUp, Target, CircleCheckBig, ChevronRig
 import iconPng from '../assets/icon.png'
 import { useCountUp } from '../hooks/useCountUp'
 
-// Aligned perfectly with the core PostgreSQL Dashboard CLUSTER_BADGES mapping
 const COGNITIVE_TIERS = {
   1: { text: 'Independent', color: '#7a9e6e', bg: 'rgba(122,158,110,0.15)', border: 'rgba(122,158,110,0.25)', desc: 'Exhibits robust conceptual autonomy with nominal dependency on system hint structures.' },
   0: { text: 'Assisted',    color: '#f5c842', bg: 'rgba(245,200,66,0.15)',  border: 'rgba(245,200,66,0.25)',  desc: 'Demonstrates clear core schema comprehension but relies systematically on hint scaffolding under stress.' },
@@ -59,7 +58,6 @@ function compute(results, aiResults) {
     const stats = topicStats[topicName];
     const topicAccuracy = (stats.correct / stats.total) * 100;
     
-    // 🛡️ PERBAIKAN SYLLABUS: Evaluasi mutlak berbasis pengerjaan nyata
     if (topicAccuracy < 70) {
       weakList.push({ name: topicName, score: topicAccuracy });
     } else {
@@ -229,7 +227,6 @@ export default function LearningProfile({ results, aiResults, onContinue }) {
           </div>
         </motion.div>
 
-        {/* Continue Action Anchor Button */}
         <div style={{ textAlign: 'center' }}>
           <motion.button type="button" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.72 }} whileHover={{ scale: 1.03, boxShadow: '0 14px 40px rgba(90,171,222,0.4)' }} whileTap={{ scale: 0.97 }}
             onClick={onContinue} className="shimmer-btn"

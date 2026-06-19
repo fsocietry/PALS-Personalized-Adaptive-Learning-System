@@ -31,28 +31,23 @@ export default function Dashboard({ user, onStartQuiz, onLogout, cognitiveProfil
   const calculatedStats = useMemo(() => {
     const historyArray = Array.isArray(quizHistory) ? quizHistory : [];
     
-    // Saring data kuis latihan mandiri (Single Practice)
     const practiceQuizzes = historyArray.filter(item => item.topicIndex !== 0);
     // Saring data hasil Diagnostic (yang tersimpan 12 baris dengan difficulty = 0)
     const diagnosticRows = historyArray.filter(item => item.topicIndex === 0 || item.difficulty === 0);
 
-    // Tentukan jumlah total kuis selesai secara logis edukasi (1 paket Diagnostic dihitung 1 kuis)
     const totalPracticeCount = practiceQuizzes.length;
     const hasCompletedDiagnosticPack = diagnosticRows.length > 0;
     const totalQuizzesCompleted = totalPracticeCount + (hasCompletedDiagnosticPack ? 1 : 0);
 
-    // Hitung akumulasi skor rata-rata gabungan
     let avgScore = 0;
     let scoreSum = 0;
     let weightCount = 0;
 
-    // Tambahkan bobot skor kuis latihan mandiri jika ada
     practiceQuizzes.forEach(q => {
       scoreSum += (Number(q.score) || 0);
       weightCount++;
     });
 
-    // ✨ FIXED: Pembersihan typo fungsi q => pada akumulasi reduce diagnostic score
     if (hasCompletedDiagnosticPack) {
       const diagAvg = Math.round(diagnosticRows.reduce((sum, d) => sum + (Number(d.score) || 0), 0) / diagnosticRows.length);
       scoreSum += diagAvg;
@@ -61,7 +56,6 @@ export default function Dashboard({ user, onStartQuiz, onLogout, cognitiveProfil
 
     avgScore = weightCount > 0 ? Math.round(scoreSum / weightCount) : 0;
 
-    // Ambil total hari aktif belajar unik
     let streakDays = 0;
     if (historyArray.length > 0) {
       const uniqueDays = [...new Set(historyArray.map(item => {
@@ -84,14 +78,12 @@ export default function Dashboard({ user, onStartQuiz, onLogout, cognitiveProfil
     { icon: <TrendingUp size={17} color="#fff" />,  bg: 'linear-gradient(135deg,#7a9e6e,#5d8a52)', label: 'Learning Streak', val: `${streak} ${streak === 1 ? 'day' : 'days'}` },
   ]
 
-  // Bersihkan rendering riwayat agar Diagnostic Test tidak membludak memakan 12 baris list di dashboard
   const uniqueHistoryDisplayList = useMemo(() => {
     const historyArray = Array.isArray(quizHistory) ? quizHistory : [];
     const displayList = [];
     const checkedDiagnosticSessions = new Set();
 
     historyArray.forEach((session) => {
-      // Jika baris data adalah paket Diagnostic Test, kompilasikan jadi 1 item baris log summary
       if (session.topicIndex === 0 || session.difficulty === 0) {
         const dateKey = session.createdAt ? session.createdAt.slice(0, 16) : "diag";
         if (!checkedDiagnosticSessions.has(dateKey)) {
@@ -107,7 +99,6 @@ export default function Dashboard({ user, onStartQuiz, onLogout, cognitiveProfil
           });
         }
       } else {
-        // Jika kuis latihan biasa, langsung masukkan secara normal
         displayList.push({
           id: session.id,
           topicName: TENSE_TOPICS[session.topicIndex - 1] || "Practice Session",
@@ -120,7 +111,6 @@ export default function Dashboard({ user, onStartQuiz, onLogout, cognitiveProfil
       }
     });
 
-    // 🎯 REVERSE CHRONOLOGICAL ORDER: Urutkan data kuis dari yang paling baru dikerjakan (Paling Atas)
     displayList.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
 
     return displayList;
@@ -341,7 +331,7 @@ export default function Dashboard({ user, onStartQuiz, onLogout, cognitiveProfil
                             {session.topicName}
                           </p>
                           <p style={{ color: 'rgba(113,191,235,0.7)', fontSize: '0.72rem', margin: 0 }}>
-                            {formattedDate} • Completed Node Items: {session.totalQuestion}
+                            {formattedDate} • Completed Questions: {session.totalQuestion}
                           </p>
                         </div>
                       </div>

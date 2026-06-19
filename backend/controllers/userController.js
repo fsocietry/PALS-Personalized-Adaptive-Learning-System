@@ -5,13 +5,10 @@ exports.getUserProfile = async (req, res) => {
     const userId = req.user.uid;
     console.log("🔍 [Backend] Mencari profil kognitif untuk userId:", userId);
 
-    // Eksekusi kueri ke Cloud SQL via Data Connect
     const queryResult = await getUserProfile({ userId });
     
-    // 📦 DEBUG LOG: Intip struktur asli hasil kueri di terminal backend lo!
     console.log("📦 [Backend] queryResult Mentah dari SQL:", JSON.stringify(queryResult));
 
-    // 🧠 SYSTEM DEFENSIVE: Cek semua kemungkinan struktur objek dari SDK Firebase
     let profile = null;
     if (queryResult) {
       profile = queryResult.data?.topicProfile || queryResult.topicProfile || queryResult.data;
@@ -21,7 +18,6 @@ exports.getUserProfile = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      // Gunakan '|| null' agar jika kosong, propertinya tidak hilang/undefined saat dikirim ke React
       topicProfile: profile || null 
     });
 

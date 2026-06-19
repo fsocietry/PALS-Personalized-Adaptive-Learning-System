@@ -5,7 +5,6 @@ type User @table(key: "id") {
   createdAt: Timestamp!
 }
 
-# ✅ FIX 1: Satu user hanya boleh memiliki SATU profil tenses secara total
 type TopicProfile @table(key: ["user"]) {
   user: User!
   topic1: Int!
@@ -23,7 +22,6 @@ type TopicProfile @table(key: ["user"]) {
   updatedAt: Timestamp!
 }
 
-# ✅ FIX 2: Satu user hanya boleh memiliki SATU prediksi per satu kategori topik tenses
 type Prediction @table(key: ["user", "topicIndex"]) {
   user: User!
   topicIndex: Int!
@@ -32,7 +30,6 @@ type Prediction @table(key: ["user", "topicIndex"]) {
   updatedAt: Timestamp!
 }
 
-# ✅ FIX 3: Satu user hanya boleh memiliki SATU jalur rekomendasi belajar aktif
 type LearningPath @table(key: ["user"]) {
   user: User!
   currentTopic: Int!
@@ -41,7 +38,6 @@ type LearningPath @table(key: ["user"]) {
   updatedAt: Timestamp!
 }
 
-# (Tabel QuizAttempt biarkan tanpa direktif key agar tetap mencatat log baris baru tiap sesi)
 type QuizAttempt @table {
   user: User!
   topicIndex: Int!
